@@ -73,6 +73,7 @@ APMrover2/test.APMrover2/
 mk/PX4/ROMFS/default.parm
 autotest.lck
 build
+Build.*
 Build.ArduCopter/*
 Build.ArduPlane/*
 Build.APMrover2/*
