@@ -38,14 +38,16 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 RC_Channel rc1(0), rc2(1), rc3(2), rc4(3);
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri	motors(rc1, rc2, rc3, rc4, 400);
-AP_MotorsQuad   motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsHexa	motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsY6	motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsOcta	motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsOctaQuad	motors(rc1, rc2, rc3, rc4, 400);
-//AP_MotorsHeli	motors(rc1, rc2, rc3, rc4, 400);
+//AP_MotorsTri	motors(400);
+AP_MotorsQuad   motors(400);
+//AP_MotorsHexa	motors(400);
+//AP_MotorsY6	motors(400);
+//AP_MotorsOcta	motors(400);
+//AP_MotorsOctaQuad	motors(400);
+//AP_MotorsHeli	motors(400);
 
+static void motor_order_test();
+static void stability_test();
 
 // setup
 void setup()
@@ -54,9 +56,9 @@ void setup()
 
     // motor initialisation
     motors.set_update_rate(490);
-    // motors.set_frame_orientation(AP_MOTORS_X_FRAME);
-    motors.set_frame_orientation(AP_MOTORS_PLUS_FRAME);
-    motors.set_min_throttle(130);
+    motors.set_frame_orientation(AP_MOTORS_X_FRAME);
+    // motors.set_frame_orientation(AP_MOTORS_PLUS_FRAME);
+    motors.set_throttle_range(130, 1100, 1900);
     motors.set_hover_throttle(500);
     motors.Init();      // initialise motors
 
@@ -113,7 +115,7 @@ void motor_order_test()
     motors.armed(true);
     for (int8_t i=1; i <= AP_MOTORS_MAX_NUM_MOTORS; i++) {
         hal.console->printf_P(PSTR("Motor %d\n"),(int)i);
-        motors.output_test(i, 1150);
+        motors.output_test(i, 1300);
         hal.scheduler->delay(300);
         motors.output_test(i, 1000);
         hal.scheduler->delay(2000);
@@ -171,7 +173,7 @@ void stability_test()
     motors.armed(true);
 
     // run stability test
-    for (int16_t i=0; i < testing_array_rows; i++) {
+    for (int16_t i=0; i < (int16_t)testing_array_rows; i++) {
         roll_in = testing_array[i][0];
         pitch_in = testing_array[i][1];
         yaw_in = testing_array[i][2];
