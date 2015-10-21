@@ -1059,7 +1059,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);
-#if INS_MAX_INSTANCES > 1
+
     if (ins.get_gyro_count() <= 1 &&
         ins.get_accel_count() <= 1 &&
         compass.get_count() <= 1) {
@@ -1084,8 +1084,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);        
-#endif
-#if INS_MAX_INSTANCES > 2
+
     if (ins.get_gyro_count() <= 2 &&
         ins.get_accel_count() <= 2 &&
         compass.get_count() <= 2) {
@@ -1110,7 +1109,6 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);        
-#endif
 }
 
 void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
@@ -1123,7 +1121,7 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
         pressure*0.01f, // hectopascal
         (pressure - barometer.get_ground_pressure(0))*0.01f, // hectopascal
         barometer.get_temperature(0)*100); // 0.01 degrees C
-#if BARO_MAX_INSTANCES > 1
+
     if (barometer.num_instances() > 1) {
         pressure = barometer.get_pressure(1);
         mavlink_msg_scaled_pressure2_send(
@@ -1133,8 +1131,7 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
             (pressure - barometer.get_ground_pressure(1))*0.01f, // hectopascal
             barometer.get_temperature(1)*100); // 0.01 degrees C        
     }
-#endif
-#if BARO_MAX_INSTANCES > 2
+
     if (barometer.num_instances() > 2) {
         pressure = barometer.get_pressure(2);
         mavlink_msg_scaled_pressure3_send(
@@ -1144,7 +1141,6 @@ void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
             (pressure - barometer.get_ground_pressure(2))*0.01f, // hectopascal
             barometer.get_temperature(2)*100); // 0.01 degrees C        
     }
-#endif
 }
 
 void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass, AP_Baro &barometer)
@@ -1370,7 +1366,6 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
  */
 void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
 {
-#if INS_VIBRATION_CHECK
     Vector3f vibration = ins.get_vibration_levels();
 
     mavlink_msg_vibration_send(
@@ -1382,7 +1377,6 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
         ins.get_accel_clip_count(0),
         ins.get_accel_clip_count(1),
         ins.get_accel_clip_count(2));
-#endif
 }
 
 void GCS_MAVLINK::send_home(const Location &home) const

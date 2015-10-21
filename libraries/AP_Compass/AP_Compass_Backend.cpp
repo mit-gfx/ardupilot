@@ -44,7 +44,11 @@ void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint32_t time_us
     Compass::mag_state &state = _compass._state[instance];
 
     state.last_update_ms = hal.scheduler->millis();
-    state.last_update_usec = hal.scheduler->micros();
+
+    // note that we do not set last_update_usec here as otherwise the
+    // EKF and DCM would end up consuming compass data at the full
+    // sensor rate. We want them to consume only the filtered fields
+    
     state.raw_field = mag;
     state.raw_meas_time_us = time_us;
     state.updated_raw_field = true;
@@ -131,9 +135,7 @@ uint8_t AP_Compass_Backend::register_compass(void) const
 */
 void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 {
-#if COMPASS_MAX_INSTANCES > 1
     _compass._state[instance].dev_id.set(dev_id);
-#endif
 }
 
 /*

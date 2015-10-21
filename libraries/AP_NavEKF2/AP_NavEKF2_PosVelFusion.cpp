@@ -4,11 +4,6 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -110,15 +105,23 @@ bool NavEKF2_core::resetHeightDatum(void)
 // select fusion of velocity, position and height measurements
 void NavEKF2_core::SelectVelPosFusion()
 {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
+    if (magFusePerformed && dtIMUavg < 0.005f && !posVelFusionDelayed) {
+        posVelFusionDelayed = true;
+        return;
+    } else {
+        posVelFusionDelayed = false;
+    }
+
     // check for and read new GPS data
     readGpsData();
 
     // Determine if we need to fuse position and velocity data on this time step
-    if (RecallGPS() && PV_AidingMode != AID_RELATIVE) {
+    if (RecallGPS() && PV_AidingMode == AID_ABSOLUTE) {
         // Don't fuse velocity data if GPS doesn't support it
-        // If no aiding is avaialble, then we use zeroed GPS position and  elocity data to constrain
-        // tilt errors assuming that the vehicle is not accelerating
-        if (frontend._fusionModeGPS <= 1 || PV_AidingMode == AID_NONE) {
+        if (frontend._fusionModeGPS <= 1) {
             fuseVelData = true;
         } else {
             fuseVelData = false;
@@ -146,11 +149,26 @@ void NavEKF2_core::SelectVelPosFusion()
         fuseHgtData = true;
     }
 
+    // If we are operating without any aiding, fuse in the last known position and zero velocity
+    // to constrain tilt drift. This assumes a non-manoeuvring vehicle
+    // Do this to coincide with the height fusion
+    if (fuseHgtData && PV_AidingMode == AID_NONE) {
+        gpsDataDelayed.vel.zero();
+        gpsDataDelayed.pos.x = lastKnownPositionNE.x;
+        gpsDataDelayed.pos.y = lastKnownPositionNE.y;
+        fuseVelData = true;
+        fusePosData = true;
+    }
+
     // perform fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         FuseVelPosNED();
+        // clear the flags to prevent repeated fusion of the same data
+        fuseVelData = false;
+        fuseHgtData = false;
+        fusePosData = false;
     }
 }
 
@@ -158,7 +176,7 @@ void NavEKF2_core::SelectVelPosFusion()
 void NavEKF2_core::FuseVelPosNED()
 {
     // start performance timer
-    perf_begin(_perf_FuseVelPosNED);
+    hal.util->perf_begin(_perf_FuseVelPosNED);
 
     // health is set bad until test passed
     velHealth = false;
@@ -193,17 +211,12 @@ void NavEKF2_core::FuseVelPosNED()
         if (useAirspeed()) gpsRetryTime = frontend.gpsRetryTimeUseTAS_ms;
         else gpsRetryTime = frontend.gpsRetryTimeNoTAS_ms;
 
-        // form the observation vector and zero velocity and horizontal position observations if in constant position mode
-        // If in constant velocity mode, hold the last known horizontal velocity vector
-        if (PV_AidingMode == AID_ABSOLUTE) {
-            observation[0] = gpsDataDelayed.vel.x + gpsVelGlitchOffset.x;
-            observation[1] = gpsDataDelayed.vel.y + gpsVelGlitchOffset.y;
-            observation[2] = gpsDataDelayed.vel.z;
-            observation[3] = gpsDataDelayed.pos.x + gpsPosGlitchOffsetNE.x;
-            observation[4] = gpsDataDelayed.pos.y + gpsPosGlitchOffsetNE.y;
-        } else if (PV_AidingMode == AID_NONE) {
-            for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
-        }
+        // form the observation vector
+        observation[0] = gpsDataDelayed.vel.x + gpsVelGlitchOffset.x;
+        observation[1] = gpsDataDelayed.vel.y + gpsVelGlitchOffset.y;
+        observation[2] = gpsDataDelayed.vel.z;
+        observation[3] = gpsDataDelayed.pos.x + gpsPosGlitchOffsetNE.x;
+        observation[4] = gpsDataDelayed.pos.y + gpsPosGlitchOffsetNE.y;
         observation[5] = -baroDataDelayed.hgt;
 
         // calculate additional error in GPS position caused by manoeuvring
@@ -485,7 +498,7 @@ void NavEKF2_core::FuseVelPosNED()
     ConstrainVariances();
 
     // stop performance timer
-    perf_end(_perf_FuseVelPosNED);
+    hal.util->perf_end(_perf_FuseVelPosNED);
 }
 
 /********************************************************

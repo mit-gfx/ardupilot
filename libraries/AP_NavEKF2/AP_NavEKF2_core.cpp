@@ -4,11 +4,6 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -40,19 +35,27 @@ NavEKF2_core::NavEKF2_core(NavEKF2 &_frontend, const AP_AHRS *ahrs, AP_Baro &bar
 
     //variables
     lastRngMeasTime_ms(0),          // time in msec that the last range measurement was taken
-    rngMeasIndex(0)                 // index into ringbuffer of current range measurement
+    rngMeasIndex(0),                // index into ringbuffer of current range measurement
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
-    _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EKF_CovariancePrediction")),
-    _perf_FuseVelPosNED(perf_alloc(PC_ELAPSED, "EKF_FuseVelPosNED")),
-    _perf_FuseMagnetometer(perf_alloc(PC_ELAPSED, "EKF_FuseMagnetometer")),
-    _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EKF_FuseAirspeed")),
-    _perf_FuseSideslip(perf_alloc(PC_ELAPSED, "EKF_FuseSideslip")),
-    _perf_TerrainOffset(perf_alloc(PC_ELAPSED, "EKF_TerrainOffset")),
-    _perf_FuseOptFlow(perf_alloc(PC_ELAPSED, "EKF_FuseOptFlow"))
-#endif
+    _perf_UpdateFilter(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_UpdateFilter")),
+    _perf_CovariancePrediction(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_CovariancePrediction")),
+    _perf_FuseVelPosNED(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseVelPosNED")),
+    _perf_FuseMagnetometer(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseMagnetometer")),
+    _perf_FuseAirspeed(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseAirspeed")),
+    _perf_FuseSideslip(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseSideslip")),
+    _perf_TerrainOffset(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_TerrainOffset")),
+    _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseOptFlow"))
 {
+    _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test0");
+    _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test1");
+    _perf_test[2] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test2");
+    _perf_test[3] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test3");
+    _perf_test[4] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test4");
+    _perf_test[5] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test5");
+    _perf_test[6] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test6");
+    _perf_test[7] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test7");
+    _perf_test[8] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test8");
+    _perf_test[9] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test9");
 }
 
 /********************************************************
@@ -67,7 +70,7 @@ void NavEKF2_core::InitialiseVariables()
     lastHealthyMagTime_ms = imuSampleTime_ms;
     prevTasStep_ms = imuSampleTime_ms;
     prevBetaStep_ms = imuSampleTime_ms;
-    lastMagUpdate_ms = 0;
+    lastMagUpdate_us = 0;
     lastHgtReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = imuSampleTime_ms;
     lastPosPassTime_ms = imuSampleTime_ms;
@@ -85,8 +88,6 @@ void NavEKF2_core::InitialiseVariables()
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
-    hgtMeasTime_ms = imuSampleTime_ms;
-    magMeasTime_ms = imuSampleTime_ms;
     timeTasReceived_ms = 0;
     magYawResetTimer_ms = imuSampleTime_ms;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
@@ -166,7 +167,7 @@ void NavEKF2_core::InitialiseVariables()
     delAngCorrection.zero();
     delVelCorrection.zero();
     velCorrection.zero();
-    gpsQualGood = false;
+    gpsGoodToAlign = false;
     gpsNotAvailable = true;
     motorsArmed = false;
     prevMotorsArmed = false;
@@ -186,6 +187,15 @@ void NavEKF2_core::InitialiseVariables()
     gpsVertVelFilt = 0.0f;
     gpsHorizVelFilt = 0.0f;
     memset(&statesArray, 0, sizeof(statesArray));
+    posDownDerivative = 0.0f;
+    posDown = 0.0f;
+    imuNoiseFiltState0 = 0.0f;
+    imuNoiseFiltState1 = 0.0f;
+    lastImuSwitchState = IMUSWITCH_MIXED;
+    posVelFusionDelayed = false;
+    optFlowFusionDelayed = false;
+    airSpdFusionDelayed = false;
+    sideSlipFusionDelayed = false;
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -266,6 +276,8 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
+    hal.console->printf("EKF2 initialised\n");
+
     return true;
 }
 
@@ -336,7 +348,10 @@ void NavEKF2_core::UpdateFilter()
     }
 
     // start the timer used for load measurement
-    perf_begin(_perf_UpdateFilter);
+#if EK2_DISABLE_INTERRUPTS
+    irqstate_t istate = irqsave();
+#endif
+    hal.util->perf_begin(_perf_UpdateFilter);
 
     // TODO - in-flight restart method
 
@@ -369,14 +384,14 @@ void NavEKF2_core::UpdateFilter()
     // Read range finder data which is used by both position and optical flow fusion
     readRangeFinder();
 
+    // Update states using  magnetometer data
+    SelectMagFusion();
+
     // Update states using GPS and altimeter data
     SelectVelPosFusion();
 
     // Update states using optical flow data
     SelectFlowFusion();
-
-    // Update states using  magnetometer data
-    SelectMagFusion();
 
     // Update states using airspeed data
     SelectTasFusion();
@@ -388,11 +403,19 @@ void NavEKF2_core::UpdateFilter()
     calcOutputStatesFast();
 
     // stop the timer used for load measurement
-    perf_end(_perf_UpdateFilter);
+    hal.util->perf_end(_perf_UpdateFilter);
+#if EK2_DISABLE_INTERRUPTS
+    irqrestore(istate);
+#endif
 }
 
-// update the quaternion, velocity and position states using delayed IMU measurements
-// because the EKF is running on a delayed time horizon
+/*
+ * Update the quaternion, velocity and position states using delayed IMU measurements
+ * because the EKF is running on a delayed time horizon. Note that the quaternion is
+ * not used by the EKF equations, which instead estimate the error in the attitude of
+ * the vehicle when each observtion is fused. This attitude error is then used to correct
+ * the quaternion.
+*/
 void NavEKF2_core::UpdateStrapdownEquationsNED()
 {
     Vector3f delVelNav;  // delta velocity vector
@@ -523,8 +546,18 @@ void  NavEKF2_core::calcOutputStates() {
     while (imuStoreAccessIndex != fifoIndexNow);
 }
 
-// Propagate PVA solution forward from the fusion time horizon to the current time horizon
-// using simple observer. This also applies an LPF to fusion corrections
+/*
+ * Propagate PVA solution forward from the fusion time horizon to the current time horizon
+ * using simple observer which performs two functions:
+ * 1) Corrects for the delayed time horizon used by the EKF.
+ * 2) Applies a LPF to state corrections to prevent 'stepping' in states due to measurement
+ * fusion introducing unwanted noise into the control loops.
+ * The inspiration for using a complementary filter to correct for time delays in the EKF
+ * is based on the work by A Khosravian.
+ *
+ * “Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements”
+ * A Khosravian, J Trumpf, R Mahony, T Hamel, Australian National University
+*/
 void  NavEKF2_core::calcOutputStatesFast() {
 
     // Calculate strapdown solution at the current time horizon
@@ -608,12 +641,21 @@ void  NavEKF2_core::calcOutputStatesFast() {
     const float Kpos = 1.0f;
     velCorrection = (stateStruct.position - outputDataDelayed.position) * Kpos;
 
+    // update vertical velocity and position states used to provide a vertical position derivative output
+    // using a simple complementary filter
+    float lastPosDownDerivative = posDownDerivative;
+    posDownDerivative = 2.0f * (outputDataNew.position.z - posDown);
+    posDown += (posDownDerivative + lastPosDownDerivative + 2.0f*delVelNav.z) * (imuDataNew.delVelDT*0.5f);
 }
 
-// calculate the predicted state covariance matrix
+/*
+ * Calculate the predicted state covariance matrix using algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and otehr equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+*/
 void NavEKF2_core::CovariancePrediction()
 {
-    perf_begin(_perf_CovariancePrediction);
+    hal.util->perf_begin(_perf_CovariancePrediction);
     float windVelSigma; // wind velocity 1-sigma process noise - m/s
     float dAngBiasSigma;// delta angle bias 1-sigma process noise - rad/s
     float dVelBiasSigma;// delta velocity bias 1-sigma process noise - m/s
@@ -657,8 +699,8 @@ void NavEKF2_core::CovariancePrediction()
     dAngBiasSigma = dt * constrain_float(frontend._gyroBiasProcessNoise, 0.0f, 1e-4f);
     dVelBiasSigma = dt * constrain_float(frontend._accelBiasProcessNoise, 1e-6f, 1e-2f);
     dAngScaleSigma = dt * constrain_float(frontend._gyroScaleProcessNoise,1e-6f,1e-2f);
-    magEarthSigma = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-2f);
-    magBodySigma  = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-2f);
+    magEarthSigma = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-1f);
+    magBodySigma  = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-1f);
     for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 0.0f;
     for (uint8_t i=9; i<=11; i++) processNoise[i] = dAngBiasSigma;
     for (uint8_t i=12; i<=14; i++) processNoise[i] = dAngScaleSigma;
@@ -1127,7 +1169,7 @@ void NavEKF2_core::CovariancePrediction()
     summedDelVel.zero();
     dt = 0.0f;
 
-    perf_end(_perf_CovariancePrediction);
+    hal.util->perf_end(_perf_CovariancePrediction);
 }
 
 
@@ -1169,6 +1211,9 @@ void NavEKF2_core::StoreOutputReset()
         storedOutput[i] = outputDataNew;
     }
     outputDataDelayed = outputDataNew;
+    // reset the states for the complementary filter used to provide a vertical position dervative output
+    posDown = stateStruct.position.z;
+    posDownDerivative = stateStruct.velocity.z;
 }
 
 // Reset the stored output quaternion history to current EKF state
