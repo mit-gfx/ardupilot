@@ -71,14 +71,14 @@ bool EmptyScheduler::system_initializing() {
 void EmptyScheduler::system_initialized()
 {}
 
-void EmptyScheduler::panic(const prog_char_t *errormsg, ...)
+void EmptyScheduler::panic(const char *errormsg, ...)
 {
     va_list ap;
 
     va_start(ap, errormsg);
-    hal.console->vprintf_P(errormsg, ap);
+    hal.console->vprintf(errormsg, ap);
     va_end(ap);
-    hal.console->printf_P("\n");
+    hal.console->printf("\n");
 
     for(;;);
 }

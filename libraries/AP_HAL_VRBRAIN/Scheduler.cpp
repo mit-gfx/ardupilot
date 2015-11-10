@@ -325,7 +325,7 @@ void *VRBRAINScheduler::_io_thread(void)
     return NULL;
 }
 
-void VRBRAINScheduler::panic(const prog_char_t *errormsg, ...)
+void VRBRAINScheduler::panic(const char *errormsg, ...)
 {
     va_list ap;
 
@@ -350,8 +350,8 @@ bool VRBRAINScheduler::system_initializing() {
 
 void VRBRAINScheduler::system_initialized() {
     if (_initialized) {
-        panic(PSTR("PANIC: scheduler::system_initialized called"
-                   "more than once"));
+        panic("PANIC: scheduler::system_initialized called"
+                   "more than once");
     }
     _initialized = true;
 }

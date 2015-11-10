@@ -224,13 +224,13 @@ bool FLYMAPLEScheduler::system_initializing() {
 void FLYMAPLEScheduler::system_initialized()
 {
     if (_initialized) {
-        panic(PSTR("PANIC: scheduler::system_initialized called"
-                   "more than once"));
+        panic("PANIC: scheduler::system_initialized called"
+                   "more than once");
     }
     _initialized = true;
 }
 
-void FLYMAPLEScheduler::panic(const prog_char_t *errormsg, ...) {
+void FLYMAPLEScheduler::panic(const char *errormsg, ...) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */
     // REVISIT: not tested on FLYMAPLE
@@ -239,15 +239,15 @@ void FLYMAPLEScheduler::panic(const prog_char_t *errormsg, ...) {
     _timer_suspended = true;
 
     va_start(ap, errormsg);
-    hal.console->vprintf_P(errormsg, ap);
+    hal.console->vprintf(errormsg, ap);
     va_end(ap);
-    hal.console->printf_P("\n");
+    hal.console->printf("\n");
 
     for(;;);
 }
 
 void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {
-    hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
+    hal.uartA->println("GOING DOWN FOR A REBOOT\r\n");
     hal.scheduler->delay(100);
     nvic_sys_reset();
 }

@@ -5,7 +5,7 @@
 #include <AP_Math/AP_Math.h>
 
 // table of user settable parameters
-const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     // 0, 1 were RATE_RP_MAX, RATE_Y_MAX
 
@@ -56,6 +56,8 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
     // @Values: 0:Disabled, 72000:Slow, 108000:Medium, 162000:Fast
     // @User: Advanced
     AP_GROUPINFO("ACCEL_P_MAX", 7, AC_AttitudeControl, _accel_pitch_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
+
+    // IDs 8,9,10,11 RESERVED (in use on Solo)
 
     AP_GROUPEND
 };

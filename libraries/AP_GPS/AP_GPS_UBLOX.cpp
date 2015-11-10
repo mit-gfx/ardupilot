@@ -56,7 +56,10 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     next_fix(AP_GPS::NO_FIX),
     rate_update_step(0),
     _last_5hz_time(0),
-    noReceivedHdop(true)
+    noReceivedHdop(true),
+    _cfg_saved(false),
+    _last_cfg_sent_time(0),
+    _num_cfg_save_tries(0)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, NULL, 0);
@@ -79,7 +82,7 @@ AP_GPS_UBLOX::send_next_rate_update(void)
         return;
     }
 
-    //hal.console->printf_P(PSTR("next_rate: %u\n"), (unsigned)rate_update_step);
+    //hal.console->printf("next_rate: %u\n", (unsigned)rate_update_step);
 
     switch (rate_update_step++) {
     case 0:
@@ -153,9 +156,14 @@ AP_GPS_UBLOX::read(void)
     uint8_t data;
     int16_t numc;
     bool parsed = false;
+    uint32_t millis_now = hal.scheduler->millis();
 
     if (need_rate_update) {
         send_next_rate_update();
+    }else if(!_cfg_saved && gps._save_config && _num_cfg_save_tries < 5 && (millis_now - _last_cfg_sent_time) > 5000)  {         //save the configuration sent until now
+        _last_cfg_sent_time = millis_now;
+        _save_cfg();
+        _num_cfg_save_tries++;
     }
 
     numc = port->available();
@@ -395,6 +403,10 @@ AP_GPS_UBLOX::_parse_gps(void)
 {
     if (_class == CLASS_ACK) {
         Debug("ACK %u", (unsigned)_msg_id);
+
+        if(_msg_id == MSG_ACK_ACK && _buffer.ack.clsID == CLASS_CFG && _buffer.ack.msgID == MSG_CFG_CFG) {
+            _cfg_saved = true;
+        }
         return false;
     }
 
@@ -423,6 +435,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS,
                           &_buffer.nav_settings,
                           sizeof(_buffer.nav_settings));
+            _cfg_saved = false;     //save configuration
         }
         return false;
     }
@@ -485,6 +498,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             _send_message(CLASS_CFG, MSG_CFG_SBAS,
                           &_buffer.sbas,
                           sizeof(_buffer.sbas));
+            _cfg_saved = false;
         }
     }
 
@@ -786,6 +800,19 @@ AP_GPS_UBLOX::_configure_gps(void)
     _send_message(CLASS_CFG, MSG_CFG_GNSS, NULL, 0);
 }
 
+/*
+ * save gps configurations to non-volatile memory sent until the call of
+ * this message
+ */
+void
+AP_GPS_UBLOX::_save_cfg()
+{
+    ubx_cfg_cfg save_cfg;
+    save_cfg.clearMask = 0;
+    save_cfg.saveMask = SAVE_CFG_ALL;
+    save_cfg.loadMask = 0;
+    _send_message(CLASS_CFG, MSG_CFG_CFG, &save_cfg, sizeof(save_cfg));
+}
 
 /*
   detect a Ublox GPS. Adds one byte, and returns true if the stream
