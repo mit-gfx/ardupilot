@@ -96,7 +96,7 @@ void Copter::init_ardupilot()
 
     cliSerial->printf("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n",
-                        hal.util->available_memory());
+                      (unsigned)hal.util->available_memory());
 
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
@@ -161,6 +161,9 @@ void Copter::init_ardupilot()
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
+
+    // update motor interlock state
+    update_using_interlock();
 
 #if FRAME_CONFIG == HELI_FRAME
     // trad heli specific initialisation
@@ -295,7 +298,7 @@ void Copter::startup_INS_ground()
     ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
 
     // Warm up and calibrate gyro offsets
-    ins.init(ins_sample_rate);
+    ins.init(scheduler.get_loop_rate_hz());
 
     // reset ahrs including gyro bias
     ahrs.reset();

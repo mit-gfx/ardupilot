@@ -62,6 +62,10 @@ void Tracker::init_tracker()
 
     mavlink_system.sysid = g.sysid_this_mav;
 
+#if LOGGING_ENABLED == ENABLED
+    log_init();
+#endif
+
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
             hal.console->println("Compass initialisation failed!");
@@ -77,7 +81,7 @@ void Tracker::init_tracker()
     ahrs.init();
     ahrs.set_fly_forward(false);
 
-    ins.init(ins_sample_rate);
+    ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
     init_barometer();
@@ -94,7 +98,7 @@ void Tracker::init_tracker()
     if (fabsf(g.start_latitude) <= 90.0f && fabsf(g.start_longitude) <= 180.0f) {
         current_loc.lat = g.start_latitude * 1.0e7f;
         current_loc.lng = g.start_longitude * 1.0e7f;
-        gcs_send_text(MAV_SEVERITY_NOTICE, "ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
+        gcs_send_text(MAV_SEVERITY_NOTICE, "Ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
     }
 
     // see if EEPROM has a default location as well
@@ -104,7 +108,7 @@ void Tracker::init_tracker()
 
     init_capabilities();
 
-    gcs_send_text(MAV_SEVERITY_INFO,"\nReady to track.");
+    gcs_send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking
@@ -181,7 +185,7 @@ void Tracker::disarm_servos()
  */
 void Tracker::prepare_servos()
 {
-    start_time_ms = hal.scheduler->millis();
+    start_time_ms = AP_HAL::millis();
     channel_yaw.radio_out = channel_yaw.radio_trim;
     channel_pitch.radio_out = channel_pitch.radio_trim;
     channel_yaw.output();
@@ -237,4 +241,15 @@ void Tracker::check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
+}
+
+/*
+  should we log a message type now?
+ */
+bool Tracker::should_log(uint32_t mask)
+{
+    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
+        return false;
+    }
+    return true;
 }

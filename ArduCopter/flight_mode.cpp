@@ -244,6 +244,17 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
         motors.set_acro_tail(false);
     }
 
+    // if we are changing from a mode that did not use manual throttle,
+    // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
+    // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
+    if (!mode_has_manual_throttle(old_control_mode)){
+        if (new_control_mode == STABILIZE){
+            input_manager.set_stab_col_ramp(1.0);
+        } else if (new_control_mode == ACRO){
+            input_manager.set_stab_col_ramp(0.0);
+        }
+    }
+
     // reset RC Passthrough to motors
     motors.reset_radio_passthrough();
 #endif //HELI_FRAME
@@ -340,9 +351,6 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case LAND:
         port->print("LAND");
-        break;
-    case OF_LOITER:
-        port->print("OF_LOITER");
         break;
     case DRIFT:
         port->print("DRIFT");

@@ -7,13 +7,14 @@
 #define PCA9685_PRIMARY_ADDRESS             0x40 // All address pins low, PCA9685 default
 #define PCA9685_SECONDARY_ADDRESS           0x41
 #define PCA9685_TERTIARY_ADDRESS            0x42
+#define PCA9685_QUATENARY_ADDRESS           0x55
 
 class Linux::RCOutput_PCA9685 : public AP_HAL::RCOutput {
     public:
     RCOutput_PCA9685(uint8_t addr, bool external_clock, uint8_t channel_offset,
                           int16_t oe_pin_number);
     ~RCOutput_PCA9685();
-    void     init(void* machtnichts);
+    void     init();
     void     reset_all_channels();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);

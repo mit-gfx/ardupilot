@@ -9,11 +9,13 @@
 // stabilize_init - initialise stabilize controller
 bool Copter::stabilize_init(bool ignore_checks)
 {
+    // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
+    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (g.rc_3.control_in > get_non_takeoff_throttle())) {
+        return false;
+    }
     // set target altitude to zero for reporting
-    // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
     pos_control.set_alt_target(0);
 
-    // stabilize should never be made to fail
     return true;
 }
 
@@ -49,7 +51,7 @@ void Copter::stabilize_run()
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
 
     // call attitude controller
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // body-frame rate controller is run directly from 100hz loop
 

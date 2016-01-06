@@ -55,12 +55,51 @@ NavEKF2_core::NavEKF2_core(void) :
 }
 
 // setup this core backend
-void NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index)
+bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index)
 {
     frontend = _frontend;
     imu_index = _imu_index;
     core_index = _core_index;
     _ahrs = frontend->_ahrs;
+
+    /*
+      the imu_buffer_length needs to cope with a 260ms delay at a
+      maximum fusion rate of 100Hz. Non-imu data coming in at faster
+      than 100Hz is downsampled. For 50Hz main loop rate we need a
+      shorter buffer.
+     */
+    if (_ahrs->get_ins().get_sample_rate() < 100) {
+        imu_buffer_length = 13;
+    } else {
+        // maximum 260 msec delay at 100 Hz fusion rate
+        imu_buffer_length = 26;
+    }
+    if(!storedGPS.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedMag.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedBaro.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    } 
+    if(!storedTAS.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedOF.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedRange.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedIMU.init(imu_buffer_length)) {
+        return false;
+    }
+    if(!storedOutput.init(imu_buffer_length)) {
+        return false;
+    }
+
+    return true;
 }
     
 
@@ -73,16 +112,16 @@ void NavEKF2_core::InitialiseVariables()
 {
     // calculate the nominal filter update rate
     const AP_InertialSensor &ins = _ahrs->get_ins();
-    localFilterTimeStep_ms = (uint8_t)(1000.0f/(float)ins.get_sample_rate());
-    localFilterTimeStep_ms = max(localFilterTimeStep_ms,10);
+    localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
+    localFilterTimeStep_ms = MAX(localFilterTimeStep_ms,10);
 
     // initialise time stamps
-    imuSampleTime_ms = hal.scheduler->millis();
+    imuSampleTime_ms = AP_HAL::millis();
     lastHealthyMagTime_ms = imuSampleTime_ms;
     prevTasStep_ms = imuSampleTime_ms;
     prevBetaStep_ms = imuSampleTime_ms;
     lastMagUpdate_us = 0;
-    lastHgtReceived_ms = imuSampleTime_ms;
+    lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = imuSampleTime_ms;
     lastPosPassTime_ms = imuSampleTime_ms;
     lastHgtPassTime_ms = imuSampleTime_ms;
@@ -109,8 +148,9 @@ void NavEKF2_core::InitialiseVariables()
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
     magTimeout = false;
+    allMagSensorsFailed = false;
     tasTimeout = true;
-    badMag = false;
+    badMagYaw = false;
     badIMUdata = false;
     firstMagYawInit = false;
     dtIMUavg = 0.0025f;
@@ -123,13 +163,12 @@ void NavEKF2_core::InitialiseVariables()
     memset(&nextP[0][0], 0, sizeof(nextP));
     memset(&processNoise[0], 0, sizeof(processNoise));
     flowDataValid = false;
-    newDataRng  = false;
+    rangeDataToFuse  = false;
     fuseOptFlowData = false;
     Popt = 0.0f;
     terrainState = 0.0f;
     prevPosN = stateStruct.position.x;
     prevPosE = stateStruct.position.y;
-    fuseRngData = false;
     inhibitGndState = true;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
@@ -148,7 +187,6 @@ void NavEKF2_core::InitialiseVariables()
     inFlight = false;
     prevInFlight = false;
     manoeuvring = false;
-    yawAligned = false;
     inhibitWindStates = true;
     inhibitMagStates = true;
     gndOffsetValid =  false;
@@ -166,6 +204,7 @@ void NavEKF2_core::InitialiseVariables()
     yawAlignComplete = false;
     stateIndexLim = 23;
     baroStoreIndex = 0;
+    rangeStoreIndex = 0;
     magStoreIndex = 0;
     gpsStoreIndex = 0;
     tasStoreIndex = 0;
@@ -210,6 +249,15 @@ void NavEKF2_core::InitialiseVariables()
     imuDataDownSampledNew.delVelDT = 0.0f;
     runUpdates = false;
     framesSincePredict = 0;
+
+    // zero data buffers
+    storedIMU.reset();
+    storedGPS.reset();
+    storedMag.reset();
+    storedBaro.reset();
+    storedTAS.reset();
+    storedRange.reset();
+    storedOutput.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -226,10 +274,11 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     InitialiseVariables();
 
     // Initialise IMU data
-    dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
-    dtEkfAvg = min(0.01f,dtIMUavg);
+    dtIMUavg = _ahrs->get_ins().get_loop_delta_t();
+    dtEkfAvg = MIN(0.01f,dtIMUavg);
     readIMUData();
-    StoreIMU_reset();
+    storedIMU.reset_history(imuDataNew);
+    imuDataDelayed = imuDataNew;
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3f initAccVec;
@@ -276,7 +325,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     ResetPosition();
 
     // read the barometer and set the height state
-    readHgtData();
+    readBaroData();
     ResetHeight();
 
     // define Earth rotation vector in the NED navigation frame
@@ -372,7 +421,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
     // TODO - in-flight restart method
 
     //get starting time for update step
-    imuSampleTime_ms = hal.scheduler->millis();
+    imuSampleTime_ms = AP_HAL::millis();
 
     // Check arm status and perform required checks and mode changes
     controlFilterModes();
@@ -387,9 +436,6 @@ void NavEKF2_core::UpdateFilter(bool predict)
 
         // Predict the covariance growth
         CovariancePrediction();
-
-        // Read range finder data which is used by both position and optical flow fusion
-        readRangeFinder();
 
         // Update states using  magnetometer data
         SelectMagFusion();
@@ -538,11 +584,11 @@ void  NavEKF2_core::calcOutputStatesFast() {
 
     // store the output in the FIFO buffer if this is a filter update step
     if (runUpdates) {
-        StoreOutput();
+        storedOutput[storedIMU.get_youngest_index()] = outputDataNew;
     }
 
     // extract data at the fusion time horizon from the FIFO buffer
-    RecallOutput();
+    outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
 
     // compare quaternion data with EKF quaternion at the fusion time horizon and calculate correction
 
@@ -668,9 +714,9 @@ void NavEKF2_core::CovariancePrediction()
     day_s = stateStruct.gyro_scale.y;
     daz_s = stateStruct.gyro_scale.z;
     dvz_b = stateStruct.accel_zbias;
-    float _gyrNoise = constrain_float(frontend->_gyrNoise, 1e-3f, 5e-2f);
+    float _gyrNoise = constrain_float(frontend->_gyrNoise, 1e-4f, 1e-2f);
     daxNoise = dayNoise = dazNoise = dt*_gyrNoise;
-    float _accNoise = constrain_float(frontend->_accNoise, 5e-2f, 1.0f);
+    float _accNoise = constrain_float(frontend->_accNoise, 1e-2f, 1.0f);
     dvxNoise = dvyNoise = dvzNoise = dt*_accNoise;
 
     // calculate the predicted covariance due to inertial sensor error propagation
@@ -1115,12 +1161,6 @@ void NavEKF2_core::zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last)
     }
 }
 
-// store output data in the FIFO
-void NavEKF2_core::StoreOutput()
-{
-    storedOutput[fifoIndexNow] = outputDataNew;
-}
-
 // reset the output data to the current EKF state
 void NavEKF2_core::StoreOutputReset()
 {
@@ -1128,7 +1168,7 @@ void NavEKF2_core::StoreOutputReset()
     outputDataNew.velocity = stateStruct.velocity;
     outputDataNew.position = stateStruct.position;
     // write current measurement to entire table
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i] = outputDataNew;
     }
     outputDataDelayed = outputDataNew;
@@ -1142,7 +1182,7 @@ void NavEKF2_core::StoreQuatReset()
 {
     outputDataNew.quat = stateStruct.quat;
     // write current measurement to entire table
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].quat = outputDataNew.quat;
     }
     outputDataDelayed.quat = outputDataNew.quat;
@@ -1153,16 +1193,10 @@ void NavEKF2_core::StoreQuatRotate(Quaternion deltaQuat)
 {
     outputDataNew.quat = outputDataNew.quat*deltaQuat;
     // write current measurement to entire table
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].quat = storedOutput[i].quat*deltaQuat;
     }
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
-}
-
-// recall output data from the FIFO
-void NavEKF2_core::RecallOutput()
-{
-    outputDataDelayed = storedOutput[fifoIndexDelayed];
 }
 
 // calculate nav to body quaternions from body to nav rotation matrix
@@ -1236,7 +1270,7 @@ void NavEKF2_core::ConstrainStates()
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
     for (uint8_t i=22; i<=23; i++) statesArray[i] = constrain_float(statesArray[i],-100.0f,100.0f);
     // constrain the terrain offset state
-    terrainState = max(terrainState, stateStruct.position.z + rngOnGnd);
+    terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
 }
 
 // calculate the NED earth spin vector in rad/sec
@@ -1277,10 +1311,10 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
-        yawAligned = true;
+        yawAlignComplete = true;
         // calculate initial filter quaternion states using yaw from magnetometer if mag heading healthy
         // otherwise use existing heading
-        if (!badMag) {
+        if (!badMagYaw) {
             // store the yaw change so that it can be retrieved externally for use by the control loops to prevent yaw disturbances following a reset
             Vector3f tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
@@ -1316,11 +1350,11 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         P[20][20] = P[19][19];
         P[21][21] = P[19][19];
 
-        // clear bad magnetometer status
-        badMag = false;
+        // clear bad magnetic yaw status
+        badMagYaw = false;
     } else {
         initQuat.from_euler(roll, pitch, 0.0f);
-        yawAligned = false;
+        yawAlignComplete = false;
     }
 
     // return attitude quaternion

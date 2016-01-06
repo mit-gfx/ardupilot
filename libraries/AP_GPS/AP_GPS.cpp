@@ -13,16 +13,14 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_GPS.h"
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Progmem/AP_Progmem.h>
 
-#include "AP_GPS.h"
-
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
@@ -95,7 +93,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: RAW_DATA
     // @DisplayName: Raw data logging
     // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
-    // @Values: 0:Disabled,1:log at 1MHz,5:log at 5MHz
+    // @Values: 0:Disabled,1:log every sample,5:log every 5 samples
     // @RebootRequired: True
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
 
@@ -166,7 +164,7 @@ void AP_GPS::send_blob_update(uint8_t instance)
             space = initblob_state[instance].remaining;
         }
         while (space > 0) {
-            _port[instance]->write(pgm_read_byte(initblob_state[instance].blob));
+            _port[instance]->write(*initblob_state[instance].blob);
             initblob_state[instance].blob++;
             space--;
             initblob_state[instance].remaining--;
@@ -184,7 +182,7 @@ AP_GPS::detect_instance(uint8_t instance)
 {
     AP_GPS_Backend *new_gps = NULL;
     struct detect_state *dstate = &detect_state[instance];
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (_type[instance] == GPS_TYPE_PX4) {
@@ -196,6 +194,14 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+    if (_type[instance] == GPS_TYPE_QURT) {
+        hal.console->print(" QURTGPS ");
+        new_gps = new AP_GPS_QURT(*this, state[instance], _port[instance]);
+        goto found_gps;
+    }
+#endif
+    
     if (_port[instance] == NULL) {
         // UART not available
         return;
@@ -226,7 +232,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
 		}
-		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
+		uint32_t baudrate = _baudrates[dstate->last_baud];
 		_port[instance]->begin(baudrate);
 		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
@@ -251,7 +257,7 @@ AP_GPS::detect_instance(uint8_t instance)
           for.
         */
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
-            pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
+            _baudrates[dstate->last_baud] >= 38400 &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print(" ublox ");
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
@@ -288,7 +294,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		}
 	}
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 found_gps:
 #endif
 	if (new_gps != NULL) {
@@ -347,7 +353,7 @@ AP_GPS::update_instance(uint8_t instance)
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
 
     // if we did not get a message, and the idle timer of 1.2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
@@ -401,7 +407,7 @@ AP_GPS::update(void)
 
             if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
 
-                uint32_t now = hal.scheduler->millis();
+                uint32_t now = AP_HAL::millis();
                 bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
 
                 if ( (another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
@@ -435,7 +441,7 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     if (instance >= GPS_MAX_INSTANCES) {
         return;
     }
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
     GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
@@ -507,7 +513,7 @@ AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         last_send_time_ms[chan] = last_message_time_ms(0);
     } else {
         // when we don't have a GPS then send at 1Hz
-        uint32_t now = hal.scheduler->millis();
+        uint32_t now = AP_HAL::millis();
         if (now - last_send_time_ms[chan] < 1000) {
             return;
         }

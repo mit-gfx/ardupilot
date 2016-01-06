@@ -1,6 +1,10 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 
 #include "GPIO.h"
 #include "Util_RPI.h"
@@ -30,7 +34,7 @@ void GPIO_RPI::init()
     uint32_t clk_address  = rpi_version == 1 ? CLOCK_BASE(BCM2708_PERI_BASE)  : CLOCK_BASE(BCM2709_PERI_BASE);
     // open /dev/mem
     if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
-        hal.scheduler->panic("Can't open /dev/mem");
+        AP_HAL::panic("Can't open /dev/mem");
     }
 
     // mmap GPIO
@@ -64,7 +68,7 @@ void GPIO_RPI::init()
     close(mem_fd); // No need to keep mem_fd open after mmap
 
     if (gpio_map == MAP_FAILED || pwm_map == MAP_FAILED || clk_map == MAP_FAILED) {
-        hal.scheduler->panic("Can't open /dev/mem");
+        AP_HAL::panic("Can't open /dev/mem");
     }
 
     gpio = (volatile uint32_t *)gpio_map; // Always use volatile pointer!
@@ -198,4 +202,4 @@ bool GPIO_RPI::usb_connected(void)
     return false;
 }
 
-#endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#endif

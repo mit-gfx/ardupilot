@@ -4,6 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_PX4_Namespace.h"
+#include "Semaphores.h"
 
 class PX4::NSHShellStream : public AP_HAL::Stream {
 public:
@@ -25,7 +26,7 @@ private:
     bool showed_armed_warning = false;
 
     void start_shell(void);
-    void shell_thread(void);
+    static void shell_thread(void *arg);
 };
 
 class PX4::PX4Util : public AP_HAL::Util {
@@ -56,6 +57,9 @@ public:
     void perf_end(perf_counter_t) override;
     void perf_count(perf_counter_t) override;
     
+    // create a new semaphore
+    AP_HAL::Semaphore *new_semaphore(void) override { return new PX4::Semaphore; }
+
 private:
     int _safety_handle;
     PX4::NSHShellStream _shell_stream;

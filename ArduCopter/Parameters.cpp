@@ -121,12 +121,21 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
-    // @Description: The minimum altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
+    // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
     // @Units: Centimeters
     // @Range: 0 8000
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
+
+    // @Param: RTL_SPEED
+    // @DisplayName: RTL speed
+    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WPNAV_SPEED will be used instead.
+    // @Units: cm/s
+    // @Range: 0 2000
+    // @Increment: 50
+    // @User: Standard
+    GSCALAR(rtl_speed_cms,   "RTL_SPEED",     0),
 
     // @Param: RNGFND_GAIN
     // @DisplayName: Rangefinder gain
@@ -519,24 +528,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: H_RSC_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_rsc,    "H_RSC_", RC_Channel),
-
-    // @Param: H_STAB_COL_MIN
-    // @DisplayName: Heli Stabilize Throttle Collective Minimum
-    // @Description: Helicopter's minimum collective position while pilot directly controls collective in stabilize mode
-    // @Range: 0 500
-    // @Units: Percent*10
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(heli_stab_col_min, "H_STAB_COL_MIN", HELI_STAB_COLLECTIVE_MIN_DEFAULT),
-
-    // @Param: H_STAB_COL_MAX
-    // @DisplayName: Stabilize Throttle Maximum
-    // @Description: Helicopter's maximum collective position while pilot directly controls collective in stabilize mode
-    // @Range: 500 1000
-    // @Units: Percent*10
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(heli_stab_col_max, "H_STAB_COL_MAX", HELI_STAB_COLLECTIVE_MAX_DEFAULT),
 #endif
 
     // RC channel
@@ -566,11 +557,9 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_8,    "RC8_", RC_Channel_aux),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC9_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-#endif
 
     // @Group: RC10_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
@@ -579,7 +568,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC12_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_12,                   "RC12_", RC_Channel_aux),
@@ -591,7 +579,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: RC14_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_14,                   "RC14_", RC_Channel_aux),
-#endif
 
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
@@ -851,28 +838,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GGROUP(p_pos_xy,                "POS_XY_", AC_P),
 
-#if PRECISION_LANDING == ENABLED
-     // @Param: PRECLNDVEL_P
-     // @DisplayName: Precision landing velocity controller P gain
-     // @Description: Precision landing velocity controller P gain
-     // @Range: 0.100 5.000
-     // @User: Advanced
-
-     // @Param: PRECLNDVEL_I
-     // @DisplayName: Precision landing velocity controller I gain
-     // @Description: Precision landing velocity controller I gain
-     // @Range: 0.100 5.000
-     // @User: Advanced
-
-     // @Param: PRECLNDVEL_IMAX
-     // @DisplayName: Precision landing velocity controller I gain maximum
-     // @Description: Precision landing velocity controller I gain maximum
-     // @Range: 0 1000
-     // @Units: cm/s
-     // @User: Standard
-     GGROUP(pi_precland,            "PLAND_", AC_PI_2D),
-#endif
-
     // variables not in the g class which contain EEPROM saved variables
 
 #if CAMERA == ENABLED
@@ -900,6 +865,12 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: LGR_
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
     GOBJECT(landinggear,    "LGR_", AP_LandingGear),
+
+#if FRAME_CONFIG == HELI_FRAME
+    // @Group: IM_
+    // @Path: ../libraries/AC_InputManager/AC_InputManager_Heli.cpp
+    GOBJECT(input_manager, "IM_", AC_InputManager_Heli),
+#endif
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp
@@ -954,6 +925,10 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
+
+    // @Group: LOG
+    // @Path: ../libraries/DataFlash/DataFlash.cpp
+    GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
@@ -1068,7 +1043,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(sonar,   "RNGFND", RangeFinder),
 #endif
 
-#if AP_TERRAIN_AVAILABLE
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // @Group: TERRAIN_
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),
@@ -1083,12 +1058,16 @@ const AP_Param::Info Copter::var_info[] = {
 #if PRECISION_LANDING == ENABLED
     // @Group: PRECLAND_
     // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
-    GOBJECT(precland, "PLAND_", AC_PrecLand),
+    GOBJECT(precland, "PLND_", AC_PrecLand),
 #endif
 
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
+
+    // @Group: ADSB_
+    // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
+    GOBJECT(adsb,                "ADSB_", AP_ADSB),
 
     // @Param: AUTOTUNE_AXES
     // @DisplayName: Autotune axis bitmask
@@ -1110,7 +1089,11 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Defines the minimum D gain
     // @Range: 0.001 0.006
     // @User: Standard
-    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.004f),
+    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.001f),
+
+    // @Group: NTF_
+    // @Path: ../libraries/AP_Notify/AP_Notify.cpp
+    GOBJECT(notify, "NTF_",  AP_Notify),
 
     AP_VAREND
 };
@@ -1145,7 +1128,7 @@ void Copter::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
         cliSerial->printf("Bad var table\n");
-        hal.scheduler->panic("Bad var table");
+        AP_HAL::panic("Bad var table");
     }
 
     // disable centrifugal force correction, it will be enabled as part of the arming process
@@ -1167,6 +1150,6 @@ void Copter::load_parameters(void)
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
         AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-        cliSerial->printf("load_all took %uus\n", micros() - before);
+        cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
     }
 }

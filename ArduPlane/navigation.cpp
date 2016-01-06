@@ -118,7 +118,7 @@ void Plane::calc_gndspeed_undershoot()
 	// This prevents flyaway if wind takes plane backwards
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
 	    Vector2f gndVel = ahrs.groundspeed_vector();
-		const Matrix3f &rotMat = ahrs.get_dcm_matrix();
+		const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
 		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
 		yawVect.normalize();
 		float gndSpdFwd = yawVect * gndVel;
@@ -145,6 +145,10 @@ void Plane::update_loiter()
         if (nav_controller->reached_loiter_target()) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
+            if (control_mode == GUIDED) {
+                // starting a loiter in GUIDED means we just reached the target point
+                gcs_send_mission_item_reached_message(0);
+            }
         }
     }
 }

@@ -9,13 +9,20 @@
 #include "Util.h"
 #include "SPIUARTDriver.h"
 #include "RPIOUARTDriver.h"
-#include <sys/time.h>
 #include <poll.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <sys/mman.h>
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+#include <rpcmem.h>
+#include <AP_HAL_Linux/qflight/qflight_util.h>
+#include <AP_HAL_Linux/qflight/qflight_dsp.h>
+#include <AP_HAL_Linux/qflight/qflight_buffer.h>
+#endif
+
 
 using namespace Linux;
 
@@ -28,7 +35,10 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_TONEALARM_PRIORITY    11
 #define APM_LINUX_IO_PRIORITY           10
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||    \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #define APM_LINUX_UART_PERIOD           10000
 #define APM_LINUX_RCIN_PERIOD           500
 #define APM_LINUX_TONEALARM_PERIOD      10000
@@ -38,7 +48,7 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_RCIN_PERIOD           10000
 #define APM_LINUX_TONEALARM_PERIOD      10000
 #define APM_LINUX_IO_PERIOD             20000
-#endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#endif // CONFIG_HAL_BOARD_SUBTYPE
 
 
 
@@ -69,7 +79,7 @@ void Scheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
     if (r != 0) {
         hal.console->printf("Error creating thread '%s': %s\n",
                             name, strerror(r));
-        panic("Failed to create thread");
+        AP_HAL::panic("Failed to create thread");
     }
     pthread_attr_destroy(&attr);
 
@@ -78,11 +88,9 @@ void Scheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
     }
 }
 
-void Scheduler::init(void* machtnichts)
+void Scheduler::init()
 {
     mlockall(MCL_CURRENT|MCL_FUTURE);
-
-    clock_gettime(CLOCK_MONOTONIC, &_sketch_start_time);
 
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
     sched_setscheduler(0, SCHED_FIFO, &param);
@@ -140,12 +148,12 @@ void Scheduler::_microsleep(uint32_t usec)
 
 void Scheduler::delay(uint16_t ms)
 {
-    if (stopped_clock_usec) {
+    if (_stopped_clock_usec) {
         return;
     }
-    uint64_t start = millis64();
+    uint64_t start = AP_HAL::millis64();
 
-    while ((millis64() - start) < ms) {
+    while ((AP_HAL::millis64() - start) < ms) {
         // this yields the CPU to other apps
         _microsleep(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -156,43 +164,9 @@ void Scheduler::delay(uint16_t ms)
     }
 }
 
-uint64_t Scheduler::millis64()
-{
-    if (stopped_clock_usec) {
-        return stopped_clock_usec/1000;
-    }
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e3*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
-                  (_sketch_start_time.tv_sec +
-                   (_sketch_start_time.tv_nsec*1.0e-9)));
-}
-
-uint64_t Scheduler::micros64()
-{
-    if (stopped_clock_usec) {
-        return stopped_clock_usec;
-    }
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
-                  (_sketch_start_time.tv_sec +
-                   (_sketch_start_time.tv_nsec*1.0e-9)));
-}
-
-uint32_t Scheduler::millis()
-{
-    return millis64() & 0xFFFFFFFF;
-}
-
-uint32_t Scheduler::micros()
-{
-    return micros64() & 0xFFFFFFFF;
-}
-
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    if (stopped_clock_usec) {
+    if (_stopped_clock_usec) {
         return;
     }
     _microsleep(us);
@@ -296,22 +270,38 @@ void *Scheduler::_timer_thread(void* arg)
     while (sched->system_initializing()) {
         poll(NULL, 0, 1);
     }
-    /*
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+    printf("Initialising rpcmem\n");
+    rpcmem_init();
+#endif
+    
+/*
       this aims to run at an average of 1kHz, so that it can be used
       to drive 1kHz processes without drift
      */
-    uint64_t next_run_usec = sched->micros64() + 1000;
+    uint64_t next_run_usec = AP_HAL::micros64() + 1000;
     while (true) {
-        uint64_t dt = next_run_usec - sched->micros64();
+        uint64_t dt = next_run_usec - AP_HAL::micros64();
         if (dt > 2000) {
             // we've lost sync - restart
-            next_run_usec = sched->micros64();
+            next_run_usec = AP_HAL::micros64();
         } else {
             sched->_microsleep(dt);
         }
         next_run_usec += 1000;
         // run registered timers
         sched->_run_timers(true);
+
+#if HAL_LINUX_UARTS_ON_TIMER_THREAD
+        /*
+          some boards require that UART calls happen on the same
+          thread as other calls of the same time. This impacts the
+          QFLIGHT calls where UART output is an RPC call to the DSPs
+         */
+        _run_uarts();
+        RCInput::from(hal.rcin)->_timer_tick();
+#endif
     }
     return NULL;
 }
@@ -341,9 +331,31 @@ void *Scheduler::_rcin_thread(void *arg)
     }
     while (true) {
         sched->_microsleep(APM_LINUX_RCIN_PERIOD);
+#if !HAL_LINUX_UARTS_ON_TIMER_THREAD
         RCInput::from(hal.rcin)->_timer_tick();
+#endif
     }
     return NULL;
+}
+
+
+/*
+  run timers for all UARTs
+ */
+void Scheduler::_run_uarts(void)
+{
+    // process any pending serial bytes
+    UARTDriver::from(hal.uartA)->_timer_tick();
+    UARTDriver::from(hal.uartB)->_timer_tick();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    //SPI UART not use SPI
+    if (RPIOUARTDriver::from(hal.uartC)->isExternal()) {
+        RPIOUARTDriver::from(hal.uartC)->_timer_tick();
+    }
+#else
+    UARTDriver::from(hal.uartC)->_timer_tick();
+#endif
+    UARTDriver::from(hal.uartE)->_timer_tick();
 }
 
 void *Scheduler::_uart_thread(void* arg)
@@ -355,19 +367,9 @@ void *Scheduler::_uart_thread(void* arg)
     }
     while (true) {
         sched->_microsleep(APM_LINUX_UART_PERIOD);
-
-        // process any pending serial bytes
-        UARTDriver::from(hal.uartA)->_timer_tick();
-        UARTDriver::from(hal.uartB)->_timer_tick();
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-        //SPI UART not use SPI
-        if (RPIOUARTDriver::from(hal.uartC)->isExternal()) {
-            RPIOUARTDriver::from(hal.uartC)->_timer_tick();
-        }
-#else
-        UARTDriver::from(hal.uartC)->_timer_tick();
+#if !HAL_LINUX_UARTS_ON_TIMER_THREAD
+        _run_uarts();
 #endif
-        UARTDriver::from(hal.uartE)->_timer_tick();
     }
     return NULL;
 }
@@ -407,20 +409,6 @@ void *Scheduler::_io_thread(void* arg)
     return NULL;
 }
 
-void Scheduler::panic(const char *errormsg, ...)
-{
-    va_list ap;
-
-    va_start(ap, errormsg);
-    vdprintf(1, errormsg, ap);
-    va_end(ap);
-    write(1, "\n", 1);
-
-    hal.rcin->deinit();
-    hal.scheduler->delay_microseconds(10000);
-    exit(1);
-}
-
 bool Scheduler::in_timerprocess()
 {
     return _in_timer_proc;
@@ -439,7 +427,7 @@ bool Scheduler::system_initializing() {
 void Scheduler::system_initialized()
 {
     if (_initialized) {
-        panic("PANIC: scheduler::system_initialized called more than once");
+        AP_HAL::panic("PANIC: scheduler::system_initialized called more than once");
     }
     _initialized = true;
 }
@@ -451,8 +439,8 @@ void Scheduler::reboot(bool hold_in_bootloader)
 
 void Scheduler::stop_clock(uint64_t time_usec)
 {
-    if (time_usec >= stopped_clock_usec) {
-        stopped_clock_usec = time_usec;
+    if (time_usec >= _stopped_clock_usec) {
+        _stopped_clock_usec = time_usec;
         _run_io();
     }
 }

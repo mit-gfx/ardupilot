@@ -9,8 +9,14 @@
 // acro_init - initialise acro controller
 bool Copter::acro_init(bool ignore_checks)
 {
-    // always successfully enter acro
-    return true;
+   // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
+   if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (g.rc_3.control_in > get_non_takeoff_throttle())) {
+       return false;
+   }
+   // set target altitude to zero for reporting
+   pos_control.set_alt_target(0);
+
+   return true;
 }
 
 // acro_run - runs the acro controller
@@ -37,7 +43,7 @@ void Copter::acro_run()
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
 
     // run attitude controller
-    attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+    attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
@@ -119,7 +125,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
         }
 
         // convert earth-frame level rates to body-frame level rates
-        attitude_control.frame_conversion_ef_to_bf(rate_ef_level, rate_bf_level);
+        attitude_control.euler_rate_to_ang_vel(attitude_control.get_att_target_euler_cd()*radians(0.01f), rate_ef_level, rate_bf_level);
 
         // combine earth frame rate corrections with rate requests
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
@@ -127,7 +133,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
             rate_bf_request.y += rate_bf_level.y;
             rate_bf_request.z += rate_bf_level.z;
         }else{
-            float acro_level_mix = constrain_float(1-max(max(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*ahrs.cos_pitch();
+            float acro_level_mix = constrain_float(1-MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0, 0, 1)*ahrs.cos_pitch();
 
             // Scale leveling rates by stick input
             rate_bf_level = rate_bf_level*acro_level_mix;

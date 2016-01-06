@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_H__
-#define __AP_HAL_H__
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -22,6 +20,7 @@
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include "Util.h"
+#include "OpticalFlow.h"
 
 #include "utility/Print.h"
 #include "utility/Stream.h"
@@ -30,5 +29,4 @@
 /* HAL Class definition */
 #include "HAL.h"
 
-#endif // __AP_HAL_H__
-
+#include "system.h"

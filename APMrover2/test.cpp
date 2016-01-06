@@ -215,7 +215,7 @@ int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	cliSerial->printf("%u waypoints\n", (unsigned)mission.num_commands());
-	cliSerial->printf("Hit radius: %f\n", g.waypoint_radius.get());
+	cliSerial->printf("Hit radius: %f\n", (double)g.waypoint_radius.get());
 
 	for(uint8_t i = 0; i < mission.num_commands(); i++){
         AP_Mission::Mission_Command temp_cmd;
@@ -308,7 +308,8 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 	//cliSerial->printf("Calibrating.");
 	ahrs.init();
     ahrs.set_fly_forward(true);
-	ins.init(ins_sample_rate);
+
+    ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
 	print_hit_enter();
@@ -371,7 +372,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
     ahrs.set_compass(&compass);
 
     // we need the AHRS initialised for this test
-	ins.init(ins_sample_rate);
+    ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
 	int counter = 0;
@@ -389,7 +390,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
         if(medium_loopCounter >= 5){
             if (compass.read()) {
                 // Calculate heading
-                Matrix3f m = ahrs.get_dcm_matrix();
+                Matrix3f m = ahrs.get_rotation_body_to_ned();
                 heading = compass.calculate_heading(m);
                 compass.learn_offsets();
             }
@@ -456,10 +457,10 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
             sonar_dist_cm_min = dist_cm;
             voltage_min = voltage;
         }
-        sonar_dist_cm_max = max(sonar_dist_cm_max, dist_cm);
-        sonar_dist_cm_min = min(sonar_dist_cm_min, dist_cm);
-        voltage_min = min(voltage_min, voltage);
-        voltage_max = max(voltage_max, voltage);
+        sonar_dist_cm_max = MAX(sonar_dist_cm_max, dist_cm);
+        sonar_dist_cm_min = MIN(sonar_dist_cm_min, dist_cm);
+        voltage_min = MIN(voltage_min, voltage);
+        voltage_max = MAX(voltage_max, voltage);
 
         dist_cm = sonar.distance_cm(1);
         voltage = sonar.voltage_mv(1);
@@ -467,10 +468,10 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
             sonar2_dist_cm_min = dist_cm;
             voltage2_min = voltage;
         }
-        sonar2_dist_cm_max = max(sonar2_dist_cm_max, dist_cm);
-        sonar2_dist_cm_min = min(sonar2_dist_cm_min, dist_cm);
-        voltage2_min = min(voltage2_min, voltage);
-        voltage2_max = max(voltage2_max, voltage);
+        sonar2_dist_cm_max = MAX(sonar2_dist_cm_max, dist_cm);
+        sonar2_dist_cm_min = MIN(sonar2_dist_cm_min, dist_cm);
+        voltage2_min = MIN(voltage2_min, voltage);
+        voltage2_max = MAX(voltage2_max, voltage);
 
         if (now - last_print >= 200) {
             cliSerial->printf("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n",

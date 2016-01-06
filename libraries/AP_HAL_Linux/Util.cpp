@@ -26,7 +26,7 @@ void Util::init(int argc, char * const *argv) {
 
 #ifdef HAL_UTILS_HEAT
 #if HAL_UTILS_HEAT == HAL_LINUX_HEAT_PWM
-    _heat = new Linux::HeatPwm(HAL_LINUX_HEAT_PWM_SYSFS_DIR,
+    _heat = new Linux::HeatPwm(HAL_LINUX_HEAT_PWM_NUM,
                             HAL_LINUX_HEAT_KP,
                             HAL_LINUX_HEAT_KI,
                             HAL_LINUX_HEAT_PERIOD_NS,
@@ -157,6 +157,47 @@ int Util::read_file(const char *path, const char *fmt, ...)
     if (ret < 1)
         return -errno_bkp;
 
+    return ret;
+}
+
+const char *Linux::Util::_hw_names[UTIL_NUM_HARDWARES] = {
+    [UTIL_HARDWARE_RPI1]   = "BCM2708",
+    [UTIL_HARDWARE_RPI2]   = "BCM2709",
+    [UTIL_HARDWARE_BEBOP]  = "Mykonos3 board",
+    [UTIL_HARDWARE_BEBOP2] = "Milos board",
+};
+
+#define MAX_SIZE_LINE 50
+int Util::get_hw_arm32()
+{
+    int ret = -ENOENT;
+    char buffer[MAX_SIZE_LINE];
+    const char* hardware_description_entry = "Hardware";
+    char* flag;
+    FILE* f;
+
+    f = fopen("/proc/cpuinfo", "r");
+
+    if (f == NULL) {
+        ret = -errno;
+        goto end;
+    }
+
+    while (fgets(buffer, MAX_SIZE_LINE, f) != NULL) {
+        flag = strstr(buffer, hardware_description_entry);
+        if (flag != NULL) {
+            for (uint8_t i = 0; i < UTIL_NUM_HARDWARES; i++) {
+                if (strstr(buffer, _hw_names[i]) != 0) {
+                     ret = i;
+                     goto close_end;
+                }
+            }
+        }
+    }
+
+close_end:
+    fclose(f);
+end:
     return ret;
 }
 

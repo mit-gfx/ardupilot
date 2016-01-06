@@ -10,7 +10,6 @@
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
 #include <AP_Motors/AP_Motors.h>
-#include <AP_Curve/AP_Curve.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_GPS/AP_GPS.h>
 #include <DataFlash/DataFlash.h>
@@ -24,7 +23,6 @@
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Mission/AP_Mission.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_Terrain/AP_Terrain.h>

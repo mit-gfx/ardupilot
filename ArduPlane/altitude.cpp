@@ -561,7 +561,7 @@ void Plane::rangefinder_height_update(void)
         }
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
-        height_estimate = distance * ahrs.get_dcm_matrix().c.z;
+        height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
 
         // we consider ourselves to be fully in range when we have 10
         // good samples (0.2s) that are different by 5% of the maximum
@@ -578,7 +578,7 @@ void Plane::rangefinder_height_update(void)
                 flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", height_estimate);
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)height_estimate);
             }
         }
     } else {
@@ -610,7 +610,7 @@ void Plane::rangefinder_height_update(void)
             if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
                 // the correction has changed by more than 30m, reset use of Lidar. We may have a bad lidar
                 if (rangefinder_state.in_use) {
-                    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", height_estimate);
+                    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)height_estimate);
                 }
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }

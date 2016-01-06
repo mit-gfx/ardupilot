@@ -4,13 +4,13 @@
 
 void Copter::init_barometer(bool full_calibration)
 {
-    gcs_send_text(MAV_SEVERITY_NOTICE, "Calibrating barometer");
+    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     if (full_calibration) {
         barometer.calibrate();
     }else{
         barometer.update_calibration();
     }
-    gcs_send_text(MAV_SEVERITY_INFO, "barometer calibration complete");
+    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 // return barometric altitude in centimeters
@@ -59,7 +59,7 @@ int16_t Copter::read_sonar(void)
  #if SONAR_TILT_CORRECTION == 1
     // correct alt for angle of the sonar
     float temp = ahrs.cos_pitch() * ahrs.cos_roll();
-    temp = max(temp, 0.707f);
+    temp = MAX(temp, 0.707f);
     temp_alt = (float)temp_alt * temp;
  #endif
 
@@ -75,7 +75,7 @@ int16_t Copter::read_sonar(void)
 void Copter::rpm_update(void)
 {
     rpm_sensor.update();
-    if (rpm_sensor.healthy(0) || rpm_sensor.healthy(1)) {
+    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
             DataFlash.Log_Write_RPM(rpm_sensor);
         }
@@ -178,6 +178,19 @@ void Copter::compass_cal_update()
 {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
+    }
+}
+
+void Copter::accel_cal_update()
+{
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+    ins.acal_update();
+    // check if new trim values, and set them
+    float trim_roll, trim_pitch;
+    if(ins.get_new_trim(trim_roll, trim_pitch)) {
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
 

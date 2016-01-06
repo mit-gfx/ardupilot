@@ -149,7 +149,6 @@ void Copter::read_aux_switches()
         do_aux_switch_function(g.ch8_option, aux_con.CH8_flag);
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // check if Ch9 switch has changed position
     switch_position = read_3pos_switch(g.rc_9.radio_in);
     if (aux_con.CH9_flag != switch_position) {
@@ -159,7 +158,6 @@ void Copter::read_aux_switches()
         // invoke the appropriate function
         do_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     }
-#endif
 
     // check if Ch10 switch has changed position
     switch_position = read_3pos_switch(g.rc_10.radio_in);
@@ -204,10 +202,8 @@ void Copter::init_aux_switches()
     aux_con.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
 
     // ch9, ch12 only supported on some boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     aux_con.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
     aux_con.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
-#endif
 
     // initialise functions assigned to switches
     init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
@@ -216,10 +212,8 @@ void Copter::init_aux_switches()
     init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
 
     // ch9, ch12 only supported on some boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
-#endif
 }
 
 // init_aux_switch_function - initialize aux functions
@@ -244,14 +238,9 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_RELAY:
         case AUXSW_LANDING_GEAR:
         case AUXSW_MOTOR_ESTOP:
-            do_aux_switch_function(ch_option, ch_flag);
-            break;
-
         case AUXSW_MOTOR_INTERLOCK:
-            set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
             do_aux_switch_function(ch_option, ch_flag);
             break;
-            
     }
 }
 
@@ -320,7 +309,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     cmd.p1 = 0;
                     cmd.content.location.lat = 0;
                     cmd.content.location.lng = 0;
-                    cmd.content.location.alt = max(current_loc.alt,100);
+                    cmd.content.location.alt = MAX(current_loc.alt,100);
 
                     // use the current altitude for the target alt for takeoff.
                     // only altitude will matter to the AP mission script for takeoff.

@@ -80,7 +80,7 @@
 >> - [Michael du Breuil](https://github.com/WickedShell)
 >>   - ***Subsystem***: uBlox GPS
 >> - [Víctor Mayoral Vilches](https://github.com/vmayoral)
->>   - ***Board***: PXF
+>>   - ***Board***: PXF, Erle-Brain 2, PXFmini
 >> - [Mirko Denecke](https://github.com/mirkix)
 >>   - ***Board***: BBBmini
 >> - [Georgii Staroselskii](https://github.com/staroselskii)
@@ -93,5 +93,7 @@
 >>   - ***Board***: Flymaple
 >> - [Jonathan Challinger] (https://github.com/3drobotics/ardupilot-solo)
 >>   - ***Vehicle***: 3DRobotics Solo ArduPilot maintainer
+>> - [Gustavo José de Sousa](https://github.com/guludo)
+>>   - ***Subsystem***: Build system
 >> - [Craig Elder] (https://github.com/CraigElder)
 >>   - ***Administration***: Dronecode Technical Community Manager

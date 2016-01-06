@@ -9,7 +9,7 @@
 // sport_init - initialise sport controller
 bool Copter::sport_init(bool ignore_checks)
 {
-    // initialize vertical speed and accelerationj
+    // initialize vertical speed and acceleration
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
@@ -27,6 +27,10 @@ void Copter::sport_run()
     float target_roll_rate, target_pitch_rate, target_yaw_rate;
     float target_climb_rate = 0;
     float takeoff_climb_rate = 0.0f;
+
+    // initialize vertical speed and acceleration
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
 
     // if not armed or throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || ap.throttle_zero) {
@@ -93,7 +97,7 @@ void Copter::sport_run()
     }else{
 
         // call attitude controller
-        attitude_control.rate_ef_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
+        attitude_control.input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
 
         // call throttle controller
         if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {

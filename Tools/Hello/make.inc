@@ -1,5 +1,4 @@
 LIBRARIES += AP_ADC
-LIBRARIES += AP_ADC_AnalogSource
 LIBRARIES += AP_AHRS
 LIBRARIES += AP_Airspeed
 LIBRARIES += AP_Baro
@@ -11,7 +10,6 @@ LIBRARIES += AP_InertialSensor
 LIBRARIES += AP_Math
 LIBRARIES += AP_Notify
 LIBRARIES += AP_Param
-LIBRARIES += AP_Progmem
 LIBRARIES += AP_Vehicle
 LIBRARIES += DataFlash
 LIBRARIES += Filter

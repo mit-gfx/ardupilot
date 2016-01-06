@@ -22,6 +22,7 @@
 #include "RCInput_UART.h"
 #include "RCInput_UDP.h"
 #include "RCInput_Raspilot.h"
+#include "RCInput_DSM.h"
 #include "RCOutput_PRU.h"
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_PCA9685.h"
@@ -29,6 +30,7 @@
 #include "RCOutput_Bebop.h"
 #include "RCOutput_Raspilot.h"
 #include "RCOutput_Sysfs.h"
+#include "RCOutput_qflight.h"
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "ToneAlarmDriver.h"
@@ -36,6 +38,11 @@
 #include "Util_RPI.h"
 #include "Heat.h"
 #include "Heat_Pwm.h"
+#include "CameraSensor.h"
+#include "CameraSensor_Mt9v117.h"
+#include "VideoIn.h"
+#include "OpticalFlow_Onboard.h"
+#include "Flow_PX4.h"
 
 #endif // __AP_HAL_LINUX_PRIVATE_H__
 

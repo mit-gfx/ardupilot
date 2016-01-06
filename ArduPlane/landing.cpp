@@ -16,15 +16,6 @@ bool Plane::verify_land()
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
 
-    // If a go around has been commanded, we are done landing.  This will send
-    // the mission to the next mission item, which presumably is a mission
-    // segment with operations to perform when a landing is called off.
-    // If there are no commands after the land waypoint mission item then
-    // the plane will proceed to loiter about its home point.
-    if (auto_state.commanded_go_around) {
-        return true;
-    }
-
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
     if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
@@ -139,7 +130,7 @@ void Plane::disarm_if_autoland_complete()
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= g.land_disarm_delay*1000UL) {
             if (disarm_motors()) {
-                gcs_send_text(MAV_SEVERITY_INFO,"Auto-Disarmed");
+                gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
         }
     }
@@ -260,7 +251,7 @@ bool Plane::restart_landing_sequence()
             mission.set_current_cmd(current_index+1))
     {
         // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence climbing to %dm", cmd.content.location.alt/100);
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", cmd.content.location.alt/100);
         success =  true;
     }
     else if (do_land_start_index != 0 &&
@@ -278,7 +269,7 @@ bool Plane::restart_landing_sequence()
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
         success =  true;
     } else {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to restart landing sequence!");
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
         success =  false;
     }
     return success;
@@ -301,12 +292,12 @@ bool Plane::jump_to_landing_sequence(void)
                 mission.resume();
             }
 
-            gcs_send_text(MAV_SEVERITY_INFO, "Landing sequence begun.");
+            gcs_send_text(MAV_SEVERITY_INFO, "Landing sequence start");
             return true;
         }            
     }
 
-    gcs_send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence.");
+    gcs_send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }
 

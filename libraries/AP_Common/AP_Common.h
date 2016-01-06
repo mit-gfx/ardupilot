@@ -19,17 +19,25 @@
 ///				libraries.
 ///
 
-#ifndef __AP_COMMON_H__
-#define __AP_COMMON_H__
+#pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
+#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
 #pragma GCC diagnostic warning "-Wall"
 #pragma GCC diagnostic warning "-Wextra"
 #pragma GCC diagnostic warning "-Wlogical-op"
 #pragma GCC diagnostic ignored "-Wredundant-decls"
+#else
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wgnu-variable-sized-type-not-at-end"
+#pragma GCC diagnostic ignored "-Wgnu-designator"
+#pragma GCC diagnostic ignored "-Wabsolute-value"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
 
 // used to pack structures
 #define PACKED __attribute__((__packed__))
@@ -43,24 +51,8 @@
 // sometimes we need to prevent inlining to prevent large stack usage
 #define NOINLINE __attribute__((noinline))
 
-#define FORMAT(a,b) __attribute__((format(printf, a, b)))
+#define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
-
-// Make some dire warnings into errors
-//
-// Some warnings indicate questionable code; rather than let
-// these slide, we force them to become errors so that the
-// developer has to find a safer alternative.
-//
-//#pragma GCC diagnostic error "-Wfloat-equal"
-
-// The following is strictly for type-checking arguments to printf calls
-// in conjunction with a suitably modified Arduino IDE; never define for
-// production as it generates bad code.
-//
-#if defined(PRINTF_FORMAT_WARNING_DEBUG)
- # define float double                  // silence spurious format warnings for %f
-#endif
 
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
@@ -149,10 +141,20 @@ enum HomeState {
 #define AP_PRODUCT_ID_SITL              0x03    // Software in the loop
 #define AP_PRODUCT_ID_PX4               0x04    // PX4 on NuttX
 #define AP_PRODUCT_ID_PX4_V2            0x05    // PX4 FMU2 on NuttX
+#define AP_PRODUCT_ID_PX4_V4            0x06    // PX4 FMU4 on NuttX
 #define AP_PRODUCT_ID_FLYMAPLE          0x100   // Flymaple with ITG3205, ADXL345, HMC5883, BMP085
 #define AP_PRODUCT_ID_L3G4200D          0x101   // Linux with L3G4200D and ADXL345
 #define AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE 0x102   // Linux with the PixHawk Fire Cape
 #define AP_PRODUCT_ID_MPU9250           0x103   // MPU9250
 #define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
 
-#endif // _AP_COMMON_H
+/*
+  Return true if value is between lower and upper bound inclusive.
+  False otherwise.
+*/
+bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#include <AP_HAL_QURT/replace.h>
+#endif
+

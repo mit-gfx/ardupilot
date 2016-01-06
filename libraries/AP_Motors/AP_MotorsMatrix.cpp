@@ -49,7 +49,7 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
 		mask |= 1U << i;
         }
     }
-    hal.rcout->set_freq( mask, _speed_hz );
+    rc_set_freq( mask, _speed_hz );
 }
 
 // set frame orientation (normally + or X)
@@ -78,7 +78,7 @@ void AP_MotorsMatrix::enable()
     // enable output channels
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->enable_ch(i);
+            rc_enable_ch(i);
         }
     }
 }
@@ -98,7 +98,7 @@ void AP_MotorsMatrix::output_min()
     hal.rcout->cork();
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(i, _throttle_radio_min);
+            rc_write(i, _throttle_radio_min);
         }
     }
     hal.rcout->push();
@@ -114,7 +114,7 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
             mask |= 1U << i;
         }
     }
-    return mask;
+    return rc_map_mask(mask);
 }
 
 void AP_MotorsMatrix::output_armed_not_stabilizing()
@@ -164,7 +164,7 @@ void AP_MotorsMatrix::output_armed_not_stabilizing()
     hal.rcout->cork();
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(i, motor_out[i]);
+            rc_write(i, motor_out[i]);
         }
     }
     hal.rcout->push();
@@ -244,12 +244,12 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     //      We will choose #1 (the best throttle for yaw control) if that means reducing throttle to the motors (i.e. we favour reducing throttle *because* it provides better yaw control)
     //      We will choose #2 (a mix of pilot and hover throttle) only when the throttle is quite low.  We favour reducing throttle instead of better yaw control because the pilot has commanded it
     int16_t motor_mid = (rpy_low+rpy_high)/2;
-    out_best_thr_pwm = min(out_mid_pwm - motor_mid, max(throttle_radio_output, throttle_radio_output*max(0,1.0f-_throttle_thr_mix)+get_hover_throttle_as_pwm()*_throttle_thr_mix));
+    out_best_thr_pwm = MIN(out_mid_pwm - motor_mid, MAX(throttle_radio_output, throttle_radio_output*MAX(0,1.0f-_throttle_thr_mix)+get_hover_throttle_as_pwm()*_throttle_thr_mix));
 
     // calculate amount of yaw we can fit into the throttle range
     // this is always equal to or less than the requested yaw from the pilot or rate controller
-    yaw_allowed = min(out_max_pwm - out_best_thr_pwm, out_best_thr_pwm - out_min_pwm) - (rpy_high-rpy_low)/2;
-    yaw_allowed = max(yaw_allowed, _yaw_headroom);
+    yaw_allowed = MIN(out_max_pwm - out_best_thr_pwm, out_best_thr_pwm - out_min_pwm) - (rpy_high-rpy_low)/2;
+    yaw_allowed = MAX(yaw_allowed, _yaw_headroom);
 
     if (yaw_pwm >= 0) {
         // if yawing right
@@ -291,7 +291,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     thr_adj = throttle_radio_output - out_best_thr_pwm;
 
     // calculate upper and lower limits of thr_adj
-    int16_t thr_adj_max = max(out_max_pwm-(out_best_thr_pwm+rpy_high),0);
+    int16_t thr_adj_max = MAX(out_max_pwm-(out_best_thr_pwm+rpy_high),0);
 
     // if we are increasing the throttle (situation #2 above)..
     if (thr_adj > 0) {
@@ -306,7 +306,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         // decrease throttle as close as possible to requested throttle
         // without going under out_min_pwm or over out_max_pwm
         // earlier code ensures we can't break both boundaries
-        int16_t thr_adj_min = min(out_min_pwm-(out_best_thr_pwm+rpy_low),0);
+        int16_t thr_adj_min = MIN(out_min_pwm-(out_best_thr_pwm+rpy_low),0);
         if (thr_adj > thr_adj_max) {
             thr_adj = thr_adj_max;
             limit.throttle_upper = true;
@@ -362,7 +362,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     hal.rcout->cork();
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(i, motor_out[i]);
+            rc_write(i, motor_out[i]);
         }
     }
     hal.rcout->push();
@@ -390,7 +390,7 @@ void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
     for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i] && _test_order[i] == motor_seq) {
             // turn on this motor
-            hal.rcout->write(i, pwm);
+            rc_write(i, pwm);
         }
     }
     hal.rcout->push();
@@ -415,8 +415,15 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         // set order that motor appears in test
         _test_order[motor_num] = testing_order;
 
-        // disable this channel from being used by RC_Channel_aux
-        RC_Channel_aux::disable_aux_channel(motor_num);
+        uint8_t chan;
+        if (RC_Channel_aux::find_channel((RC_Channel_aux::Aux_servo_function_t)(RC_Channel_aux::k_motor1+motor_num),
+                                         chan)) {
+            _motor_map[motor_num] = chan;
+            _motor_map_mask |= 1U<<motor_num;
+        } else {
+            // disable this channel from being used by RC_Channel_aux
+            RC_Channel_aux::disable_aux_channel(motor_num);
+        }
     }
 }
 

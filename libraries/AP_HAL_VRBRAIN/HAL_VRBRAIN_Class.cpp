@@ -32,10 +32,11 @@
 
 using namespace VRBRAIN;
 
-static Empty::EmptySemaphore  i2cSemaphore;
-static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
-static Empty::EmptySPIDeviceManager spiDeviceManager;
-//static Empty::EmptyGPIO gpioDriver;
+static Empty::Semaphore  i2cSemaphore;
+static Empty::I2CDriver  i2cDriver(&i2cSemaphore);
+static Empty::SPIDeviceManager spiDeviceManager;
+static Empty::OpticalFlow optflowDriver;
+//static Empty::GPIO gpioDriver;
 
 static VRBRAINScheduler schedulerInstance;
 static VRBRAINStorage storageDriver;
@@ -116,7 +117,8 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
         &rcinDriver,  /* rcinput */
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
-        &utilInstance) /* util */
+        &utilInstance, /* util */
+        &optflowDriver) /* optflow */
 {}
 
 bool _vrbrain_thread_should_exit = false;        /**< Daemon exit flag */
@@ -159,10 +161,10 @@ static int main_loop(int argc, char **argv)
     hal.uartC->begin(57600);
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
-    hal.scheduler->init(NULL);
-    hal.rcin->init(NULL);
-    hal.rcout->init(NULL);
-    hal.analogin->init(NULL);
+    hal.scheduler->init();
+    hal.rcin->init();
+    hal.rcout->init();
+    hal.analogin->init();
     hal.gpio->init();
 
 

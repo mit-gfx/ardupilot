@@ -18,12 +18,12 @@ extern const AP_HAL::HAL& hal;
 
 using namespace PX4;
 
-void PX4RCOutput::init(void* unused) 
+void PX4RCOutput::init()
 {
     _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
     _pwm_fd = open(PWM_OUTPUT0_DEVICE_PATH, O_RDWR);
     if (_pwm_fd == -1) {
-        hal.scheduler->panic("Unable to open " PWM_OUTPUT0_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " PWM_OUTPUT0_DEVICE_PATH);
     }
     if (ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming\n");
@@ -45,11 +45,13 @@ void PX4RCOutput::init(void* unused)
         _outputs[i].pwm_sub = orb_subscribe_multi(ORB_ID(actuator_outputs), i);
     }
 
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     _alt_fd = open("/dev/px4fmu", O_RDWR);
     if (_alt_fd == -1) {
         hal.console->printf("RCOutput: failed to open /dev/px4fmu");
         return;
     }
+#endif
 
     // ensure not to write zeros to disabled channels
     _enabled_channels = 0;
@@ -83,19 +85,22 @@ void PX4RCOutput::_init_alt_channels(void)
     }
 }
 
-void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
+/*
+  set output frequency on outputs associated with fd
+ */
+void PX4RCOutput::set_freq_fd(int fd, uint32_t chmask, uint16_t freq_hz) 
 {
-    // we can't set this per channel yet
+    // we can't set this per channel
     if (freq_hz > 50) {
         // we're being asked to set the alt rate
-        if (ioctl(_pwm_fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) != 0) {
+        if (ioctl(fd, PWM_SERVO_SET_UPDATE_RATE, (unsigned long)freq_hz) != 0) {
             hal.console->printf("RCOutput: Unable to set alt rate to %uHz\n", (unsigned)freq_hz);
             return;
         }
         _freq_hz = freq_hz;
     }
 
-    /* work out the new rate mask. The PX4IO board has 3 groups of servos. 
+    /* work out the new rate mask. The outputs have 3 groups of servos. 
 
        Group 0: channels 0 1
        Group 1: channels 4 5 6 7
@@ -131,8 +136,28 @@ void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         }
     }
 
-    if (ioctl(_pwm_fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
+    if (ioctl(fd, PWM_SERVO_SET_SELECT_UPDATE_RATE, _rate_mask) != 0) {
         hal.console->printf("RCOutput: Unable to set alt rate mask to 0x%x\n", (unsigned)_rate_mask);
+    }
+}
+
+/*
+  set output frequency
+ */
+void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
+{
+    // greater than 400 doesn't give enough room at higher periods for
+    // the down pulse
+    if (freq_hz > 400) {
+        freq_hz = 400;
+    }
+    uint32_t primary_mask = chmask & ((1UL<<_servo_count)-1);
+    uint32_t alt_mask = chmask >> _servo_count;
+    if (primary_mask && _pwm_fd != -1) {
+        set_freq_fd(_pwm_fd, primary_mask, freq_hz);
+    }
+    if (alt_mask && _alt_fd != -1) {
+        set_freq_fd(_alt_fd, alt_mask, freq_hz);
     }
 }
 
@@ -330,7 +355,7 @@ void PX4RCOutput::_publish_actuators(void)
 
 void PX4RCOutput::_timer_tick(void)
 {
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
 
     if ((_enabled_channels & ((1U<<_servo_count)-1)) == 0) {
         // no channels enabled
@@ -344,6 +369,17 @@ void PX4RCOutput::_timer_tick(void)
         _need_update = true;
     }
 
+    // check for PWM count changing. This can happen then the user changes BRD_PWM_COUNT
+    if (now - _last_config_us > 1000000) {
+        if (_pwm_fd != -1) {
+            ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count);
+        }
+        if (_alt_fd != -1) {
+            ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count);
+        }
+        _last_config_us = now;
+    }
+    
     if (_need_update && _pwm_fd != -1) {
         _need_update = false;
         perf_begin(_perf_rcout);

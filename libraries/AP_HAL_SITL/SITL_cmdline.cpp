@@ -15,6 +15,8 @@
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
+#include <SITL/SIM_Plane.h>
+#include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_CRRCSim.h>
 #include <SITL/SIM_Gazebo.h>
@@ -46,6 +48,7 @@ void SITL_State::_usage(void)
            "\t--instance N       set instance of SITL (adds 10*instance to all port numbers)\n"
            "\t--speedup SPEEDUP  set simulation speedup\n"
            "\t--gimbal           enable simulated MAVLink gimbal\n"
+           "\t--adsb             enable simulated ADSB peripheral\n"
            "\t--autotest-dir DIR set directory for additional files\n"
            "\t--uartA device     set device string for UARTA\n"
            "\t--uartB device     set device string for UARTB\n"
@@ -59,6 +62,7 @@ static const struct {
     const char *name;
     Aircraft *(*constructor)(const char *home_str, const char *frame_str);
 } model_constructors[] = {
+    { "quadplane",          QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
     { "copter",             MultiCopter::create },
@@ -74,19 +78,21 @@ static const struct {
     { "gazebo",             Gazebo::create },
     { "last_letter",        last_letter::create },
     { "tracker",            Tracker::create },
-    { "balloon",            Balloon::create }
+    { "balloon",            Balloon::create },
+    { "plane",              Plane::create },
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
 {
     int opt;
-    const char *home_str = NULL;
+    // default to CMAC
+    const char *home_str = "-35.363261,149.165230,584,353";
     const char *model_str = NULL;
     char *autotest_dir = NULL;
     float speedup = 1.0f;
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
-        hal.scheduler->panic("out of memory");
+        AP_HAL::panic("out of memory");
     }
 
     signal(SIGFPE, _sig_fpe);
@@ -112,7 +118,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTB,
         CMDLINE_UARTC,
         CMDLINE_UARTD,
-        CMDLINE_UARTE
+        CMDLINE_UARTE,
+        CMDLINE_ADSB,
     };
 
     const struct GetOptLong::option options[] = {
@@ -133,6 +140,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartE",           true,   0, CMDLINE_UARTE},
         {"client",          true,   0, CMDLINE_CLIENT},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
+        {"adsb",            false,  0, CMDLINE_ADSB},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {0, false, 0, 0}
     };
@@ -172,7 +180,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             model_str = gopt.optarg;
             break;
         case 's':
-            speedup = atof(gopt.optarg);
+            speedup = strtof(gopt.optarg, NULL);
             break;
         case 'F':
             _fdm_address = gopt.optarg;
@@ -182,6 +190,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
+            break;
+        case CMDLINE_ADSB:
+            enable_ADSB = true;
             break;
         case CMDLINE_AUTOTESTDIR:
             autotest_dir = strdup(gopt.optarg);
@@ -201,17 +212,20 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
     }
 
-    if (model_str && home_str) {
-        for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
-            if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
-                sitl_model = model_constructors[i].constructor(home_str, model_str);
-                sitl_model->set_speedup(speedup);
-                sitl_model->set_instance(_instance);
-                sitl_model->set_autotest_dir(autotest_dir);
-                _synthetic_clock_mode = true;
-                printf("Started model %s at %s at speed %.1f\n", model_str, home_str, speedup);
-                break;
-            }
+    if (!model_str) {
+        printf("You must specify a vehicle model\n");
+        exit(1);
+    }
+
+    for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
+        if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
+            sitl_model = model_constructors[i].constructor(home_str, model_str);
+            sitl_model->set_speedup(speedup);
+            sitl_model->set_instance(_instance);
+            sitl_model->set_autotest_dir(autotest_dir);
+            _synthetic_clock_mode = true;
+            printf("Started model %s at %s at speed %.1f\n", model_str, home_str, speedup);
+            break;
         }
     }
 
@@ -236,7 +250,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
     }
 
-    _sitl_setup();
+    _sitl_setup(home_str);
 }
 
 #endif

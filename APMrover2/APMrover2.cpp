@@ -37,12 +37,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Rover rover;
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
-    .function = FUNCTOR_BIND(&rover, &Rover::func, void),\
-    AP_SCHEDULER_NAME_INITIALIZER(func)\
-    .interval_ticks = _interval_ticks,\
-    .max_time_micros = _max_time_micros,\
-}
+#define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(Rover, &rover, func, _interval_ticks, _max_time_micros)
 
 /*
   scheduler table - all regular tasks should be listed here, along
@@ -50,38 +45,39 @@ Rover rover;
   time they are expected to take (in microseconds)
 */
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
-    SCHED_TASK(read_radio,              1,   1000),
-    SCHED_TASK(ahrs_update,             1,   6400),
-    SCHED_TASK(read_sonars,             1,   2000),
-    SCHED_TASK(update_current_mode,     1,   1500),
-    SCHED_TASK(set_servos,              1,   1500),
-    SCHED_TASK(update_GPS_50Hz,         1,   2500),
-    SCHED_TASK(update_GPS_10Hz,         5,   2500),
-    SCHED_TASK(update_alt,              5,   3400),
-    SCHED_TASK(navigate,                5,   1600),
-    SCHED_TASK(update_compass,          5,   2000),
-    SCHED_TASK(update_commands,         5,   1000),
-    SCHED_TASK(update_logging1,         5,   1000),
-    SCHED_TASK(update_logging2,         5,   1000),
-    SCHED_TASK(gcs_retry_deferred,      1,   1000),
-    SCHED_TASK(gcs_update,              1,   1700),
-    SCHED_TASK(gcs_data_stream_send,    1,   3000),
+    SCHED_TASK(read_radio,             50,   1000),
+    SCHED_TASK(ahrs_update,            50,   6400),
+    SCHED_TASK(read_sonars,            50,   2000),
+    SCHED_TASK(update_current_mode,    50,   1500),
+    SCHED_TASK(set_servos,             50,   1500),
+    SCHED_TASK(update_GPS_50Hz,        50,   2500),
+    SCHED_TASK(update_GPS_10Hz,        10,   2500),
+    SCHED_TASK(update_alt,             10,   3400),
+    SCHED_TASK(navigate,               10,   1600),
+    SCHED_TASK(update_compass,         10,   2000),
+    SCHED_TASK(update_commands,        10,   1000),
+    SCHED_TASK(update_logging1,        10,   1000),
+    SCHED_TASK(update_logging2,        10,   1000),
+    SCHED_TASK(gcs_retry_deferred,     50,   1000),
+    SCHED_TASK(gcs_update,             50,   1700),
+    SCHED_TASK(gcs_data_stream_send,   50,   3000),
     SCHED_TASK(read_control_switch,     7,   1000),
-    SCHED_TASK(read_trim_switch,        5,   1000),
-    SCHED_TASK(read_battery,            5,   1000),
-    SCHED_TASK(read_receiver_rssi,      5,   1000),
-    SCHED_TASK(update_events,           1,   1000),
-    SCHED_TASK(check_usb_mux,          15,   1000),
-    SCHED_TASK(mount_update,            1,    600),
-    SCHED_TASK(gcs_failsafe_check,      5,    600),
-    SCHED_TASK(compass_accumulate,      1,    900),
-    SCHED_TASK(update_notify,           1,    300),
-    SCHED_TASK(one_second_loop,        50,   3000),
-    SCHED_TASK(compass_cal_update,      1,    100), 
+    SCHED_TASK(read_trim_switch,       10,   1000),
+    SCHED_TASK(read_battery,           10,   1000),
+    SCHED_TASK(read_receiver_rssi,     10,   1000),
+    SCHED_TASK(update_events,          50,   1000),
+    SCHED_TASK(check_usb_mux,           3,   1000),
+    SCHED_TASK(mount_update,           50,    600),
+    SCHED_TASK(gcs_failsafe_check,     10,    600),
+    SCHED_TASK(compass_accumulate,     50,    900),
+    SCHED_TASK(update_notify,          50,    300),
+    SCHED_TASK(one_second_loop,         1,   3000),
+    SCHED_TASK(compass_cal_update,     50,    100), 
+    SCHED_TASK(accel_cal_update,       10,    100),
 #if FRSKY_TELEM_ENABLED == ENABLED
-    SCHED_TASK(frsky_telemetry_send,   10,    100),
+    SCHED_TASK(frsky_telemetry_send,    5,    100),
 #endif
-    SCHED_TASK(dataflash_periodic,      1,    300),
+    SCHED_TASK(dataflash_periodic,     50,    300),
 };
 
 /*
@@ -96,10 +92,6 @@ void Rover::setup()
 
     notify.init(false);
 
-    // rover does not use arming nor pre-arm checks
-    AP_Notify::flags.armed = true;
-    AP_Notify::flags.pre_arm_check = true;
-    AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.failsafe_battery = false;
     
     rssi.init();
@@ -118,7 +110,7 @@ void Rover::loop()
     // wait for an INS sample
     ins.wait_for_sample();
 
-    uint32_t timer = hal.scheduler->micros();
+    uint32_t timer = AP_HAL::micros();
 
     delta_us_fast_loop  = timer - fast_loopTimer_us;
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
@@ -147,7 +139,8 @@ void Rover::loop()
 // update AHRS system
 void Rover::ahrs_update()
 {
-    hal.util->set_soft_armed(hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    hal.util->set_soft_armed(arming.is_armed() &&
+                   hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
@@ -292,6 +285,11 @@ void Rover::one_second_loop(void)
     // cope with changes to aux functions
     update_aux();
 
+    // update notify flags
+    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    AP_Notify::flags.pre_arm_gps_check = true;
+    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -346,7 +344,8 @@ void Rover::update_GPS_10Hz(void)
 {
     have_position = ahrs.get_position(current_loc);
 
-    if (have_position && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        last_gps_msg_ms = gps.last_message_time_ms();
 
         if (ground_start_count > 1){
             ground_start_count--;
@@ -378,10 +377,14 @@ void Rover::update_GPS_10Hz(void)
         }
 
 #if CAMERA == ENABLED
-        if (camera.update_location(current_loc) == true) {
+        if (camera.update_location(current_loc, rover.ahrs) == true) {
             do_take_picture();
         }
 #endif
+
+        if (!hal.util->get_soft_armed()) {
+            update_home();
+        }
     }
 }
 

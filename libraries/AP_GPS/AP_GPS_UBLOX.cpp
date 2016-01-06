@@ -23,7 +23,8 @@
 #include "AP_GPS_UBLOX.h"
 #include <DataFlash/DataFlash.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
     #define UBLOX_VERSION_AUTODETECTION 1
 #else
     #define UBLOX_VERSION_AUTODETECTION 0
@@ -49,6 +50,9 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _payload_counter(0),
     _fix_count(0),
     _class(0),
+    _cfg_saved(false),
+    _last_cfg_sent_time(0),
+    _num_cfg_save_tries(0),
     _new_position(0),
     _new_speed(0),
     need_rate_update(false),
@@ -56,10 +60,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     next_fix(AP_GPS::NO_FIX),
     rate_update_step(0),
     _last_5hz_time(0),
-    noReceivedHdop(true),
-    _cfg_saved(false),
-    _last_cfg_sent_time(0),
-    _num_cfg_save_tries(0)
+    noReceivedHdop(true)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, NULL, 0);
@@ -156,7 +157,7 @@ AP_GPS_UBLOX::read(void)
     uint8_t data;
     int16_t numc;
     bool parsed = false;
-    uint32_t millis_now = hal.scheduler->millis();
+    uint32_t millis_now = AP_HAL::millis();
 
     if (need_rate_update) {
         send_next_rate_update();
@@ -283,7 +284,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
     }
     struct log_Ubx1 pkt = {
         LOG_PACKET_HEADER_INIT(_ubx_msg_log_index(LOG_GPS_UBX1_MSG)),
-        time_us    : hal.scheduler->micros64(),
+        time_us    : AP_HAL::micros64(),
         instance   : state.instance,
         noisePerMS : _buffer.mon_hw_60.noisePerMS,
         jamInd     : _buffer.mon_hw_60.jamInd,
@@ -307,7 +308,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
 
     struct log_Ubx2 pkt = {
         LOG_PACKET_HEADER_INIT(_ubx_msg_log_index(LOG_GPS_UBX2_MSG)),
-        time_us   : hal.scheduler->micros64(),
+        time_us   : AP_HAL::micros64(),
         instance  : state.instance,
         ofsI      : _buffer.mon_hw2.ofsI,
         magI      : _buffer.mon_hw2.magI,
@@ -325,7 +326,7 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
         return;
     }
-    uint64_t now = hal.scheduler->micros64();
+    uint64_t now = AP_HAL::micros64();
     for (uint8_t i=0; i<raw.numSV; i++) {
         struct log_GPS_RAW pkt = {
             LOG_PACKET_HEADER_INIT(LOG_GPS_RAW_MSG),
@@ -350,7 +351,7 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
         return;
     }
-    uint64_t now = hal.scheduler->micros64();
+    uint64_t now = AP_HAL::micros64();
 
     struct log_GPS_RAWH header = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_RAWH_MSG),
@@ -615,7 +616,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
         state.num_sats    = _buffer.solution.satellites;
         if (next_fix >= AP_GPS::GPS_OK_FIX_2D) {
-            state.last_gps_time_ms = hal.scheduler->millis();
+            state.last_gps_time_ms = AP_HAL::millis();
             if (state.time_week == _buffer.solution.week &&
                 state.time_week_ms + 200 == _buffer.solution.time) {
                 // we got a 5Hz update. This relies on the way
@@ -630,8 +631,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         next_fix = state.status;
         state.num_sats = 10;
         state.time_week = 1721;
-        state.time_week_ms = hal.scheduler->millis() + 3*60*60*1000 + 37000;
-        state.last_gps_time_ms = hal.scheduler->millis();
+        state.time_week_ms = AP_HAL::millis() + 3*60*60*1000 + 37000;
+        state.last_gps_time_ms = AP_HAL::millis();
         state.hdop = 130;
 #endif
         break;
@@ -690,13 +691,13 @@ AP_GPS_UBLOX::_parse_gps(void)
     if (_new_position && _new_speed && _last_vel_time == _last_pos_time) {
         _new_speed = _new_position = false;
 		_fix_count++;
-        if ((hal.scheduler->millis() - _last_5hz_time) > 15000U && !need_rate_update) {
+        if ((AP_HAL::millis() - _last_5hz_time) > 15000U && !need_rate_update) {
             // the GPS is running slow. It possibly browned out and
             // restarted with incorrect parameters. We will slowly
             // send out new parameters to fix it
             need_rate_update = true;
             rate_update_step = 0;
-            _last_5hz_time = hal.scheduler->millis();
+            _last_5hz_time = AP_HAL::millis();
         }
 
 		if (_fix_count == 50 && gps._sbas_mode != 2) {
@@ -791,7 +792,7 @@ AP_GPS_UBLOX::_configure_gps(void)
 {
     // start the process of updating the GPS rates
     need_rate_update = true;
-    _last_5hz_time = hal.scheduler->millis();
+    _last_5hz_time = AP_HAL::millis();
     rate_update_step = 0;
 
     // ask for the current navigation settings

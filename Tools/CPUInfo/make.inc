@@ -1,5 +1,4 @@
 LIBRARIES += AP_ADC
-LIBRARIES += AP_ADC_AnalogSource
 LIBRARIES += AP_AHRS
 LIBRARIES += AP_Airspeed
 LIBRARIES += AP_Baro
@@ -15,7 +14,6 @@ LIBRARIES += AP_NavEKF
 LIBRARIES += AP_Notify
 LIBRARIES += AP_OpticalFlow
 LIBRARIES += AP_Param
-LIBRARIES += AP_Progmem
 LIBRARIES += AP_Rally
 LIBRARIES += AP_RangeFinder
 LIBRARIES += AP_Scheduler

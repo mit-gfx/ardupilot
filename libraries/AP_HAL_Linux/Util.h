@@ -7,6 +7,15 @@
 
 #include "AP_HAL_Linux_Namespace.h"
 #include "ToneAlarmDriver.h"
+#include "Semaphores.h"
+
+enum hw_type {
+    UTIL_HARDWARE_RPI1 = 0,
+    UTIL_HARDWARE_RPI2,
+    UTIL_HARDWARE_BEBOP,
+    UTIL_HARDWARE_BEBOP2,
+    UTIL_NUM_HARDWARES,
+};
 
 class Linux::Util : public AP_HAL::Util {
 public:
@@ -24,7 +33,7 @@ public:
 
     bool toneAlarm_init();
     void toneAlarm_set_tune(uint8_t tune);
-    
+
     void _toneAlarm_timer_tick();
 
     /*
@@ -47,7 +56,7 @@ public:
      * should not be used on hot path since it will open, write and close the
      * file for each call.
      */
-    int write_file(const char *path, const char *fmt, ...) FORMAT(3, 4);
+    int write_file(const char *path, const char *fmt, ...) FMT_PRINTF(3, 4);
 
     /*
      * Read a string as specified by @fmt from the file in @path. Note this
@@ -56,13 +65,24 @@ public:
      */
     int read_file(const char *path, const char *fmt, ...) FMT_SCANF(3, 4);
 
+    perf_counter_t perf_alloc(perf_counter_type t, const char *name) override;
+    void perf_begin(perf_counter_t perf) override;
+    void perf_end(perf_counter_t perf) override;
+    void perf_count(perf_counter_t perf) override;
+
+    // create a new semaphore
+    AP_HAL::Semaphore *new_semaphore(void) override { return new Linux::Semaphore; }
+
+    int get_hw_arm32();
+
 private:
     static Linux::ToneAlarm _toneAlarm;
     Linux::Heat *_heat;
     int saved_argc;
     char* const *saved_argv;
     const char* custom_log_directory = NULL;
-    const char* custom_terrain_directory = NULL;	
+    const char* custom_terrain_directory = NULL;
+    static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
 
 

@@ -5,7 +5,6 @@
 //
 
 #include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 
@@ -30,7 +29,7 @@ AP_AHRS_DCM  ahrs(ins, baro, gps);
 
 void setup(void)
 {
-    ins.init(AP_InertialSensor::RATE_100HZ);
+    ins.init(100);
     ahrs.init();
     serial_manager.init();
 
@@ -47,7 +46,7 @@ void loop(void)
 {
     static uint16_t counter;
     static uint32_t last_t, last_print, last_compass;
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     float heading = 0;
 
     if (last_t == 0) {
@@ -58,7 +57,7 @@ void loop(void)
 
     if (now - last_compass > 100*1000UL &&
         compass.read()) {
-        heading = compass.calculate_heading(ahrs.get_dcm_matrix());
+        heading = compass.calculate_heading(ahrs.get_rotation_body_to_ned());
         // read compass at 10Hz
         last_compass = now;
 #if WITH_GPS
