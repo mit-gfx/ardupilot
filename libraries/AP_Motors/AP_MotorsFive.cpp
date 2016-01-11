@@ -70,26 +70,19 @@ void AP_MotorsFive::setup_motors()
     // call parent
     AP_MotorsMatrix::setup_motors();
 
-    // The actual control allocation matrix from our simulator:
-    //    0.55,   1.25,  -3.00728, -0.223846
-    //       0,  -1.25,   1.62136, -0.161629
-    //-1.06432,   1.25,   2.63593, -0.223859
-    //   -0.55,  -1.25,  -1.99272, -0.276154
-    // 1.01457,      0,  0.742713, -0.114512
-
-    add_motor_raw(AP_MOTORS_MOT_1,  -1.25f,   0.5687f,  -0.7518f,  1);
-    add_motor_raw(AP_MOTORS_MOT_2,   1.25f,   0.0486f,   0.4058f,  2);
-    add_motor_raw(AP_MOTORS_MOT_3,  -1.25f,  -1.0887f,   0.6594f,  3);
-    add_motor_raw(AP_MOTORS_MOT_4,   1.25f,  -0.5687f,  -0.4982f,  4);
-    add_motor_raw(AP_MOTORS_MOT_5,    0.0f,   1.0401f,   0.1848f,  5);
+    add_motor_raw(AP_MOTORS_MOT_1,  -1.1930f,   0.5418f,  -0.7519f,  1);
+    add_motor_raw(AP_MOTORS_MOT_2,   1.1930f,   0.0500f,   0.4050f,  2);
+    add_motor_raw(AP_MOTORS_MOT_3,  -1.1930f,  -1.0336f,   0.6587f,  3);
+    add_motor_raw(AP_MOTORS_MOT_4,   1.1930f,  -0.5418f,  -0.4981f,  4);
+    add_motor_raw(AP_MOTORS_MOT_5,      0.0f,   0.9836f,   0.1864f,  5);
 
     // Set up the throttle factors.
-    const float normalized_throttle_factor = 0.2808f;
-    _throttle_factor[AP_MOTORS_MOT_1] = 0.2192f / normalized_throttle_factor;
-    _throttle_factor[AP_MOTORS_MOT_2] = 0.1640f / normalized_throttle_factor;
-    _throttle_factor[AP_MOTORS_MOT_3] = 0.2256f / normalized_throttle_factor;
-    _throttle_factor[AP_MOTORS_MOT_4] = 0.2808f / normalized_throttle_factor;
-    _throttle_factor[AP_MOTORS_MOT_5] = 0.1103f / normalized_throttle_factor;
+    const float normalized_throttle_factor = 0.2681f;
+    _throttle_factor[AP_MOTORS_MOT_1] = 0.2319f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_2] = 0.1650f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_3] = 0.2011f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_4] = 0.2681f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_5] = 0.1339f / normalized_throttle_factor;
     _throttle_factor[AP_MOTORS_MOT_6] = 0.0f;
     _throttle_factor[AP_MOTORS_MOT_7] = 0.0f;
     _throttle_factor[AP_MOTORS_MOT_8] = 0.0f;
@@ -125,7 +118,9 @@ void AP_MotorsFive::output_armed_not_stabilizing()
     // set output throttle
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            motor_out[i] = (int16_t)((float)throttle_radio_output * _throttle_factor[i]);
+            // Scale the motor output by throttle factor.
+            motor_out[i] = (int16_t)(_throttle_radio_min +
+                    ((float)(throttle_radio_output - _throttle_radio_min)) * _throttle_factor[i]);
         }
     }
 
@@ -314,8 +309,8 @@ void AP_MotorsFive::output_armed_stabilizing()
     // add scaled roll, pitch, constrained yaw and throttle for each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            motor_out[i] = (int16_t)((float)(out_best_thr_pwm + thr_adj) * _throttle_factor[i]) +
-                            rpy_scale*rpy_out[i];
+            motor_out[i] = (int16_t)((float)(out_best_thr_pwm + thr_adj - _throttle_radio_min) * _throttle_factor[i]
+                            + _throttle_radio_min + rpy_scale*rpy_out[i]);
         }
     }
 
