@@ -26,6 +26,34 @@
 
 extern const AP_HAL::HAL& hal;
 
+// init
+void AP_MotorsFive::Init()
+{
+    // set update rate for the 3 motors (but not the servo on channel 7)
+    set_update_rate(_speed_hz);
+
+    // set the motor_enabled flag so that the ESCs can be calibrated like other frame types
+    motor_enabled[AP_MOTORS_MOT_1] = true;
+    motor_enabled[AP_MOTORS_MOT_2] = true;
+    motor_enabled[AP_MOTORS_MOT_3] = true;
+    motor_enabled[AP_MOTORS_MOT_4] = true;
+    motor_enabled[AP_MOTORS_MOT_5] = true;
+    motor_enabled[AP_MOTORS_MOT_6] = false;
+    motor_enabled[AP_MOTORS_MOT_7] = false;
+    motor_enabled[AP_MOTORS_MOT_8] = false;
+}
+
+// enable - starts allowing signals to be sent to motors
+void AP_MotorsFive::enable()
+{
+    // enable output channels
+    rc_enable_ch(AP_MOTORS_MOT_1);
+    rc_enable_ch(AP_MOTORS_MOT_2);
+    rc_enable_ch(AP_MOTORS_MOT_3);
+    rc_enable_ch(AP_MOTORS_MOT_4);
+    rc_enable_ch(AP_MOTORS_MOT_5);
+}
+
 // setup_motors - configures the motors for five rotors.
 // The order of all the 5 rotors:
 //  4 CW------ 2 CCW
@@ -42,24 +70,29 @@ void AP_MotorsFive::setup_motors()
     // call parent
     AP_MotorsMatrix::setup_motors();
 
-//0.55,  1.25,  -3.00728, -0.223846
-//0,     -1.25, 1.62136, -0.161629
-//-1.06432, 1.25, 2.63593, -0.223859
-//-0.55, -1.25, -1.99272, -0.276154
-//1.01457, 0, 0.742713, -0.114512
+    // The actual control allocation matrix from our simulator:
+    //    0.55,   1.25,  -3.00728, -0.223846
+    //       0,  -1.25,   1.62136, -0.161629
+    //-1.06432,   1.25,   2.63593, -0.223859
+    //   -0.55,  -1.25,  -1.99272, -0.276154
+    // 1.01457,      0,  0.742713, -0.114512
 
-    add_motor_raw(AP_MOTORS_MOT_1,  0.5f,   1.0f,  -0.75f,  1);
-    add_motor_raw(AP_MOTORS_MOT_2,  0.0f,  -1.0f,    0.4f,  2);
-    add_motor_raw(AP_MOTORS_MOT_3, -1.0f,   1.0f,   0.65f,  3);
-    add_motor_raw(AP_MOTORS_MOT_4, -0.5f,  -1.0f,   -0.5f,  4);
-    add_motor_raw(AP_MOTORS_MOT_5,  1.0f,   0.0f,    0.2f,  5);
+    add_motor_raw(AP_MOTORS_MOT_1,  -1.25f,   0.5687f,  -0.7518f,  1);
+    add_motor_raw(AP_MOTORS_MOT_2,   1.25f,   0.0486f,   0.4058f,  2);
+    add_motor_raw(AP_MOTORS_MOT_3,  -1.25f,  -1.0887f,   0.6594f,  3);
+    add_motor_raw(AP_MOTORS_MOT_4,   1.25f,  -0.5687f,  -0.4982f,  4);
+    add_motor_raw(AP_MOTORS_MOT_5,    0.0f,   1.0401f,   0.1848f,  5);
 
     // Set up the throttle factors.
-    _throttle_factor[AP_MOTORS_MOT_1] = 0.22f;
-    _throttle_factor[AP_MOTORS_MOT_2] = 0.16f;
-    _throttle_factor[AP_MOTORS_MOT_3] = 0.23f;
-    _throttle_factor[AP_MOTORS_MOT_4] = 0.28f;
-    _throttle_factor[AP_MOTORS_MOT_5] = 0.11f;
+    const float normalized_throttle_factor = 0.2808f;
+    _throttle_factor[AP_MOTORS_MOT_1] = 0.2192f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_2] = 0.1640f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_3] = 0.2256f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_4] = 0.2808f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_5] = 0.1103f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_6] = 0.0f;
+    _throttle_factor[AP_MOTORS_MOT_7] = 0.0f;
+    _throttle_factor[AP_MOTORS_MOT_8] = 0.0f;
 }
 
 void AP_MotorsFive::output_armed_not_stabilizing()
@@ -92,7 +125,7 @@ void AP_MotorsFive::output_armed_not_stabilizing()
     // set output throttle
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            motor_out[i] = (int16_t)((float)throttle_radio_output * _throttle_factor[i] / 0.20f);
+            motor_out[i] = (int16_t)((float)throttle_radio_output * _throttle_factor[i]);
         }
     }
 
@@ -281,7 +314,7 @@ void AP_MotorsFive::output_armed_stabilizing()
     // add scaled roll, pitch, constrained yaw and throttle for each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            motor_out[i] = (int16_t)((float)(out_best_thr_pwm + thr_adj) * _throttle_factor[i] / 0.20f) +
+            motor_out[i] = (int16_t)((float)(out_best_thr_pwm + thr_adj) * _throttle_factor[i]) +
                             rpy_scale*rpy_out[i];
         }
     }

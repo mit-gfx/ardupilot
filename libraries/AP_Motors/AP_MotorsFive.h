@@ -19,6 +19,12 @@ public:
         AP_MotorsMatrix(loop_rate, speed_hz)
     { };
 
+    // init
+    virtual void        Init();
+
+    // enable - starts allowing signals to be sent to motors
+    virtual void        enable();
+
     // setup_motors - configures the motors for five rotors.
     virtual void        setup_motors();
 
