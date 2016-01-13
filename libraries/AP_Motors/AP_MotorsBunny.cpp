@@ -58,19 +58,17 @@ void AP_MotorsBunny::setup_motors()
     // call parent
     AP_MotorsMatrix::setup_motors();
 
-    // TODO.
-    add_motor_raw(AP_MOTORS_MOT_1, 0.0f, 0.0f, 0.0f, 1);
-    add_motor_raw(AP_MOTORS_MOT_2, 0.0f, 0.0f, 0.0f, 2);
-    add_motor_raw(AP_MOTORS_MOT_3, 0.0f, 0.0f, 0.0f, 3);
-    add_motor_raw(AP_MOTORS_MOT_4, 0.0f, 0.0f, 0.0f, 4);
+    add_motor_raw(AP_MOTORS_MOT_1,  0.667836f,  0.689529f,  0.385397f, 1);
+    add_motor_raw(AP_MOTORS_MOT_2,   0.16479f,  -1.12491f, -0.254519f, 2);
+    add_motor_raw(AP_MOTORS_MOT_3,  -0.75437f, -0.779047f,  0.325853f, 3);
+    add_motor_raw(AP_MOTORS_MOT_4, -0.103483f,   1.18821f, -0.248412f, 4);
 
     // Set up the throttle factors.
-    // TODO.
-    const float normalized_throttle_factor = 1.0f;
-    _throttle_factor[AP_MOTORS_MOT_1] = 0.0f / normalized_throttle_factor;
-    _throttle_factor[AP_MOTORS_MOT_2] = 0.0f / normalized_throttle_factor;
-    _throttle_factor[AP_MOTORS_MOT_3] = 0.0f / normalized_throttle_factor;
-    _throttle_factor[AP_MOTORS_MOT_4] = 0.0f / normalized_throttle_factor;
+    const float normalized_throttle_factor = 0.2f;
+    _throttle_factor[AP_MOTORS_MOT_1] = 0.297341f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_2] = 0.225286f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_3] = 0.425341f / normalized_throttle_factor;
+    _throttle_factor[AP_MOTORS_MOT_4] = 0.2637f / normalized_throttle_factor;
     _throttle_factor[AP_MOTORS_MOT_5] = 0.0f;
     _throttle_factor[AP_MOTORS_MOT_6] = 0.0f;
     _throttle_factor[AP_MOTORS_MOT_7] = 0.0f;
