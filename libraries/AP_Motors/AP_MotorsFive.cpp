@@ -70,11 +70,11 @@ void AP_MotorsFive::setup_motors()
     // call parent
     AP_MotorsMatrix::setup_motors();
 
-    add_motor_raw(AP_MOTORS_MOT_1,  -1.1930f,   0.5418f,  -0.7519f,  1);
-    add_motor_raw(AP_MOTORS_MOT_2,   1.1930f,   0.0500f,   0.4050f,  2);
-    add_motor_raw(AP_MOTORS_MOT_3,  -1.1930f,  -1.0336f,   0.6587f,  3);
-    add_motor_raw(AP_MOTORS_MOT_4,   1.1930f,  -0.5418f,  -0.4981f,  4);
-    add_motor_raw(AP_MOTORS_MOT_5,      0.0f,   0.9836f,   0.1864f,  5);
+    add_motor_raw(AP_MOTORS_MOT_1,  -0.9f,   0.5418f,  -1.5037f,  1);
+    add_motor_raw(AP_MOTORS_MOT_2,   0.9f,   0.0500f,   0.8099f,  2);
+    add_motor_raw(AP_MOTORS_MOT_3,  -0.9f,  -1.0336f,   1.3174f,  3);
+    add_motor_raw(AP_MOTORS_MOT_4,   0.9f,  -0.5418f,  -0.9963f,  4);
+    add_motor_raw(AP_MOTORS_MOT_5,   0.0f,   0.9836f,   0.3727f,  5);
 
     // Set up the throttle factors.
     const float normalized_throttle_factor = 0.2681f;
