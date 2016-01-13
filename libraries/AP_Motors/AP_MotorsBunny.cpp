@@ -26,32 +26,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// init
-void AP_MotorsBunny::Init()
-{
-    set_update_rate(_speed_hz);
-
-    // set the motor_enabled flag so that the ESCs can be calibrated like other frame types
-    motor_enabled[AP_MOTORS_MOT_1] = true;
-    motor_enabled[AP_MOTORS_MOT_2] = true;
-    motor_enabled[AP_MOTORS_MOT_3] = true;
-    motor_enabled[AP_MOTORS_MOT_4] = true;
-    motor_enabled[AP_MOTORS_MOT_5] = false;
-    motor_enabled[AP_MOTORS_MOT_6] = false;
-    motor_enabled[AP_MOTORS_MOT_7] = false;
-    motor_enabled[AP_MOTORS_MOT_8] = false;
-}
-
-// enable - starts allowing signals to be sent to motors
-void AP_MotorsBunny::enable()
-{
-    // enable output channels
-    rc_enable_ch(AP_MOTORS_MOT_1);
-    rc_enable_ch(AP_MOTORS_MOT_2);
-    rc_enable_ch(AP_MOTORS_MOT_3);
-    rc_enable_ch(AP_MOTORS_MOT_4);
-}
-
 // setup_motors - configures the motors for bunny rotors.
 void AP_MotorsBunny::setup_motors()
 {
@@ -64,7 +38,7 @@ void AP_MotorsBunny::setup_motors()
     add_motor_raw(AP_MOTORS_MOT_4, -0.103483f,   1.18821f, -0.248412f, 4);
 
     // Set up the throttle factors.
-    const float normalized_throttle_factor = 0.2f;
+    const float normalized_throttle_factor = 0.25f;
     _throttle_factor[AP_MOTORS_MOT_1] = 0.297341f / normalized_throttle_factor;
     _throttle_factor[AP_MOTORS_MOT_2] = 0.225286f / normalized_throttle_factor;
     _throttle_factor[AP_MOTORS_MOT_3] = 0.425341f / normalized_throttle_factor;
@@ -323,11 +297,4 @@ void AP_MotorsBunny::output_armed_stabilizing()
         }
     }
     hal.rcout->push();
-}
-
-// output_disarmed - sends commands to the motors
-void AP_MotorsBunny::output_disarmed()
-{
-    // Send minimum values to all motors
-    output_min();
 }
