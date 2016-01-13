@@ -33,6 +33,7 @@
 #define AP_MOTORS_NEW_V_FRAME       12
 #define AP_MOTORS_NEW_H_FRAME       13   // same as X frame but motors spin in opposite direction
 #define AP_MOTORS_FIVE_FRAME        20   // Five rotors
+#define AP_MOTORS_BUNNY_FRAME       21   // Bunny copter
 
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors

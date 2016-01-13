@@ -16,5 +16,6 @@
 #include "AP_MotorsSingle.h"
 #include "AP_MotorsCoax.h"
 #include "AP_MotorsFive.h"
+#include "AP_MotorsBunny.h"
 
 #endif // __AP_MOTORS_H__

@@ -80,6 +80,7 @@ enum aux_sw_func {
 #define SINGLE_FRAME 8
 #define COAX_FRAME 9
 #define FIVE_FRAME 10
+#define BUNNY_FRAME 11
 
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
