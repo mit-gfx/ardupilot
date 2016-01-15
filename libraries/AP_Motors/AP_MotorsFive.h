@@ -19,23 +19,16 @@ public:
         AP_MotorsMatrix(loop_rate, speed_hz)
     { };
 
-    // init
-    virtual void        Init();
-
-    // enable - starts allowing signals to be sent to motors
-    virtual void        enable();
-
-    // setup_motors - configures the motors for five rotors.
+    // setup_motors - configures the motors for bunny rotors.
     virtual void        setup_motors();
 
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
     void                output_armed_not_stabilizing();
-    void                output_disarmed();
 
+private:
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS];
-
 };
 
 #endif  // AP_MOTORSFIVE

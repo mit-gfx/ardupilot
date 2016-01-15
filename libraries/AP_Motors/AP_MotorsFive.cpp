@@ -26,34 +26,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// init
-void AP_MotorsFive::Init()
-{
-    // set update rate for the 3 motors (but not the servo on channel 7)
-    set_update_rate(_speed_hz);
-
-    // set the motor_enabled flag so that the ESCs can be calibrated like other frame types
-    motor_enabled[AP_MOTORS_MOT_1] = true;
-    motor_enabled[AP_MOTORS_MOT_2] = true;
-    motor_enabled[AP_MOTORS_MOT_3] = true;
-    motor_enabled[AP_MOTORS_MOT_4] = true;
-    motor_enabled[AP_MOTORS_MOT_5] = true;
-    motor_enabled[AP_MOTORS_MOT_6] = false;
-    motor_enabled[AP_MOTORS_MOT_7] = false;
-    motor_enabled[AP_MOTORS_MOT_8] = false;
-}
-
-// enable - starts allowing signals to be sent to motors
-void AP_MotorsFive::enable()
-{
-    // enable output channels
-    rc_enable_ch(AP_MOTORS_MOT_1);
-    rc_enable_ch(AP_MOTORS_MOT_2);
-    rc_enable_ch(AP_MOTORS_MOT_3);
-    rc_enable_ch(AP_MOTORS_MOT_4);
-    rc_enable_ch(AP_MOTORS_MOT_5);
-}
-
 // setup_motors - configures the motors for five rotors.
 // The order of all the 5 rotors:
 //  4 CW------ 2 CCW
@@ -77,15 +49,15 @@ void AP_MotorsFive::setup_motors()
     add_motor_raw(AP_MOTORS_MOT_5,   0.0f,   0.9836f,   0.3727f,  5);
 
     // Set up the throttle factors.
+    for(int8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+        _throttle_factor[i] = 0.0f;
+    }
     const float normalized_throttle_factor = 0.2681f;
     _throttle_factor[AP_MOTORS_MOT_1] = 0.2319f / normalized_throttle_factor;
     _throttle_factor[AP_MOTORS_MOT_2] = 0.1650f / normalized_throttle_factor;
     _throttle_factor[AP_MOTORS_MOT_3] = 0.2011f / normalized_throttle_factor;
     _throttle_factor[AP_MOTORS_MOT_4] = 0.2681f / normalized_throttle_factor;
     _throttle_factor[AP_MOTORS_MOT_5] = 0.1339f / normalized_throttle_factor;
-    _throttle_factor[AP_MOTORS_MOT_6] = 0.0f;
-    _throttle_factor[AP_MOTORS_MOT_7] = 0.0f;
-    _throttle_factor[AP_MOTORS_MOT_8] = 0.0f;
 }
 
 void AP_MotorsFive::output_armed_not_stabilizing()
@@ -336,11 +308,4 @@ void AP_MotorsFive::output_armed_stabilizing()
         }
     }
     hal.rcout->push();
-}
-
-// output_disarmed - sends commands to the motors
-void AP_MotorsFive::output_disarmed()
-{
-    // Send minimum values to all motors
-    output_min();
 }
