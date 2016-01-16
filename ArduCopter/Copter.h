@@ -133,6 +133,20 @@ public:
     void setup() override;
     void loop() override;
 
+    // Used by Tao Du.
+    int16_t get_channel_roll_control_in() const { return channel_roll->control_in; }
+    int16_t get_channel_pitch_control_in() const { return channel_pitch->control_in; }
+    int16_t get_channel_throttle_control_in() const { return channel_throttle->control_in; }
+    int16_t get_channel_yaw_control_in() const { return channel_yaw->control_in; }
+
+    float get_ahrs_roll() const { return ahrs.roll; }
+    float get_ahrs_pitch() const { return ahrs.pitch; }
+    float get_ahrs_yaw() const { return ahrs.yaw; }
+    float get_ahrs_yaw_rate_earth() const { return ahrs.get_yaw_rate_earth(); }
+
+    float get_altitude() const { return inertial_nav.get_altitude(); }
+    float get_velocity_z() const { return inertial_nav.get_velocity_z(); }
+
 private:
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;

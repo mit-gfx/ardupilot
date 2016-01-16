@@ -37,6 +37,8 @@ Copter::Copter(void) :
     motors(g.single_servo_1, g.single_servo_2, g.single_servo_3, g.single_servo_4, MAIN_LOOP_RATE),
 #elif FRAME_CONFIG == COAX_FRAME  // single constructor requires extra servos for flaps
     motors(g.single_servo_1, g.single_servo_2, MAIN_LOOP_RATE),
+#elif FRAME_CONFIG == FIVE_FRAME
+    motors(MAIN_LOOP_RATE, AP_MOTORS_SPEED_DEFAULT, *this),
 #else
     motors(MAIN_LOOP_RATE),
 #endif
