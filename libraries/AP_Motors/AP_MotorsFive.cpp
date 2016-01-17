@@ -25,6 +25,8 @@
 #include <AC_PID/AC_P.h>
 #include <AC_PID/AC_PID.h>
 
+#define USE_UNOPTIMIZED
+
 extern const AP_HAL::HAL& hal;
 
 // PID controllers for roll, pitch, yaw angles and climb rate.
@@ -49,8 +51,8 @@ void AP_MotorsFive::setup_motors()
     // call parent
     AP_MotorsMatrix::setup_motors();
 
+#ifdef USE_UNOPTIMIZED
     // Unoptimized parameters.
-    /*
     add_motor_raw(AP_MOTORS_MOT_1,  -1.1930f,   0.5418f,  -3.0075f,  1);
     add_motor_raw(AP_MOTORS_MOT_2,   1.1930f,   0.0500f,   1.6198f,  2);
     add_motor_raw(AP_MOTORS_MOT_3,  -1.1930f,  -1.0336f,   2.6348f,  3);
@@ -68,15 +70,13 @@ void AP_MotorsFive::setup_motors()
     _throttle_factor[AP_MOTORS_MOT_3] = 0.2011f / normalized_factor;
     _throttle_factor[AP_MOTORS_MOT_4] = 0.2681f / normalized_factor;
     _throttle_factor[AP_MOTORS_MOT_5] = 0.1339f / normalized_factor;
-    */
-
+#else
     // Optimized parameters.
     // -0.621183    0.807174    -2.87231    0.204073
     // 1.07771      0.110314    1.26664     0.21262
     // -1.64458     -1.25492    2.05629     0.21848
     // 1.43191      -0.486728   -1.32397    0.233993
     // -0.334775    0.987783    0.86673     0.172848
-
     add_motor_raw(AP_MOTORS_MOT_1,  -0.621183f,    0.807174f,   -2.87231f,  1);
     add_motor_raw(AP_MOTORS_MOT_2,    1.07771f,    0.110314f,    1.26664f,  2);
     add_motor_raw(AP_MOTORS_MOT_3,   -1.64458f,    -1.25492f,    2.05629f,  3);
@@ -94,6 +94,7 @@ void AP_MotorsFive::setup_motors()
     _throttle_factor[AP_MOTORS_MOT_3] = 0.21838f / normalized_factor;
     _throttle_factor[AP_MOTORS_MOT_4] = 0.233993f / normalized_factor;
     _throttle_factor[AP_MOTORS_MOT_5] = 0.172848f / normalized_factor;
+#endif
 }
 
 // Do not use this function.
@@ -171,6 +172,48 @@ void AP_MotorsFive::output_armed_stabilizing()
     }
 
     // send output to each motor
+    hal.rcout->cork();
+    for(int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+        if(motor_enabled[i]) {
+            rc_write(i, motor_out[i]);
+        }
+    }
+    hal.rcout->push();
+}
+
+
+void AP_MotorsFive::test_input_output() {
+    // Test whether we can linearly map the input signals. Ideally RCIN and RCOUT curves should
+    // overlap perfectly.
+    // Get input from RC transmitter.
+    const float roll_in = ToRad(remap((float)_copter.get_channel_roll_control_in(), -4500.0f,
+            4500.0f, -30.0f, 30.0f));
+    const float pitch_in = ToRad(remap((float)_copter.get_channel_pitch_control_in(), -4500.0f,
+            4500.0f, -30.0f, 30.0f));
+    const float throttle_in = (float)_copter.get_channel_throttle_control_in();
+    const float velocity_z_in = remap(throttle_in, 0.0f, 1000.0f, -0.25f, 0.25f);
+    const float yaw_rate_in = ToRad(remap((float)_copter.get_channel_yaw_control_in(), -4500.0f,
+            4500.0f, -30.0f, 30.0f));
+
+    // Send output to each motor.
+    uint16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];
+    for (int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+        motor_out[i] = _throttle_radio_min;
+    }
+    // Min/max input values from the transmitter.
+    const float roll_min = 1103.0f;
+    const float roll_max = 1924.0f;
+    const float pitch_min = 1103.0f;
+    const float pitch_max = 1924.0f;
+    const float altitude_min = 1094.0f;
+    const float altitude_max = 1924.0f;
+    const float yaw_min = 1103.0f;
+    const float yaw_max = 1924.0f;
+    motor_out[0] = (uint16_t)remap(roll_in, ToRad(-30.0f), ToRad(30.0f), roll_min, roll_max);
+    motor_out[1] = (uint16_t)remap(pitch_in, ToRad(-30.0f), ToRad(30.0f), pitch_min, pitch_max);
+    motor_out[2] = (uint16_t)remap(throttle_in, 0.0f, 1000.0f, altitude_min, altitude_max);
+    motor_out[3] = (uint16_t)remap(yaw_rate_in, ToRad(-30.0f), ToRad(30.0f), yaw_min, yaw_max);
+
     hal.rcout->cork();
     for(int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         if(motor_enabled[i]) {

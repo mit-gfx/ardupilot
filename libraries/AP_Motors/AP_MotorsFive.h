@@ -30,6 +30,10 @@ protected:
     void                output_armed_not_stabilizing();
 
 private:
+    // Test functions.
+    void                test_input_output();
+
+
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS];
 
     // Points to the Copter class so that we can get all kinds of sensor's data.
