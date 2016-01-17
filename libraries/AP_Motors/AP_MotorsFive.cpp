@@ -49,6 +49,8 @@ void AP_MotorsFive::setup_motors()
     // call parent
     AP_MotorsMatrix::setup_motors();
 
+    // Unoptimized parameters.
+    /*
     add_motor_raw(AP_MOTORS_MOT_1,  -1.1930f,   0.5418f,  -3.0075f,  1);
     add_motor_raw(AP_MOTORS_MOT_2,   1.1930f,   0.0500f,   1.6198f,  2);
     add_motor_raw(AP_MOTORS_MOT_3,  -1.1930f,  -1.0336f,   2.6348f,  3);
@@ -66,6 +68,32 @@ void AP_MotorsFive::setup_motors()
     _throttle_factor[AP_MOTORS_MOT_3] = 0.2011f / normalized_factor;
     _throttle_factor[AP_MOTORS_MOT_4] = 0.2681f / normalized_factor;
     _throttle_factor[AP_MOTORS_MOT_5] = 0.1339f / normalized_factor;
+    */
+
+    // Optimized parameters.
+    // -0.621183    0.807174    -2.87231    0.204073
+    // 1.07771      0.110314    1.26664     0.21262
+    // -1.64458     -1.25492    2.05629     0.21848
+    // 1.43191      -0.486728   -1.32397    0.233993
+    // -0.334775    0.987783    0.86673     0.172848
+
+    add_motor_raw(AP_MOTORS_MOT_1,  -0.621183f,    0.807174f,   -2.87231f,  1);
+    add_motor_raw(AP_MOTORS_MOT_2,    1.07771f,    0.110314f,    1.26664f,  2);
+    add_motor_raw(AP_MOTORS_MOT_3,   -1.64458f,    -1.25492f,    2.05629f,  3);
+    add_motor_raw(AP_MOTORS_MOT_4,    1.43191f,   -0.486728f,   -1.32397f,  4);
+    add_motor_raw(AP_MOTORS_MOT_5,  -0.334775f,    0.987783f,    0.86673f,  5);
+
+    // Set up the throttle factors.
+    for(int8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+        _throttle_factor[i] = 0.0f;
+    }
+
+    const float normalized_factor = 0.233993f;
+    _throttle_factor[AP_MOTORS_MOT_1] = 0.204073f / normalized_factor;
+    _throttle_factor[AP_MOTORS_MOT_2] = 0.21262f / normalized_factor;
+    _throttle_factor[AP_MOTORS_MOT_3] = 0.21838f / normalized_factor;
+    _throttle_factor[AP_MOTORS_MOT_4] = 0.233993f / normalized_factor;
+    _throttle_factor[AP_MOTORS_MOT_5] = 0.172848f / normalized_factor;
 }
 
 // Do not use this function.
