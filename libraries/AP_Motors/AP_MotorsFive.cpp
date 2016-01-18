@@ -26,6 +26,7 @@
 #include <AC_PID/AC_PID.h>
 
 #define USE_UNOPTIMIZED
+#define USE_VICON
 
 extern const AP_HAL::HAL& hal;
 
@@ -128,14 +129,20 @@ void AP_MotorsFive::output_armed_stabilizing()
     // roll/pitch/yaw: +/-30 degree or degree/second(actually in radians)
     // velocity_z: -0.25m/s to 0.25m/s.
     // These values have been tested.
+#ifdef USE_VICON
+    const float roll_in = ToRad(_desired_roll);
+    const float pitch_in = ToRad(_desired_pitch);
+    const float yaw_rate_in = ToRad(_desired_yaw_rate);
+#else
     const float roll_in = ToRad(remap((float)_copter.get_channel_roll_control_in(), -4500.0f,
             4500.0f, -30.0f, 30.0f));
     const float pitch_in = ToRad(remap((float)_copter.get_channel_pitch_control_in(), -4500.0f,
             4500.0f, -30.0f, 30.0f));
-    const float throttle_in = (float)_copter.get_channel_throttle_control_in();
-    const float velocity_z_in = remap(throttle_in, 0.0f, 1000.0f, -0.25f, 0.25f);
     const float yaw_rate_in = ToRad(remap((float)_copter.get_channel_yaw_control_in(), -4500.0f,
             4500.0f, -30.0f, 30.0f));
+#endif
+    const float throttle_in = (float)_copter.get_channel_throttle_control_in();
+    const float velocity_z_in = remap(throttle_in, 0.0f, 1000.0f, -0.25f, 0.25f);
 
     // Actual input:
     // Euler angles in radians or radians/seconds. Use ToDeg to convert to degrees when necessary.
@@ -185,15 +192,21 @@ void AP_MotorsFive::output_armed_stabilizing()
 void AP_MotorsFive::test_input_output() {
     // Test whether we can linearly map the input signals. Ideally RCIN and RCOUT curves should
     // overlap perfectly.
+#ifdef USE_VICON
+    const float roll_in = ToRad(_desired_roll);
+    const float pitch_in = ToRad(_desired_pitch);
+    const float yaw_rate_in = ToRad(_desired_yaw_rate);
+#else
     // Get input from RC transmitter.
     const float roll_in = ToRad(remap((float)_copter.get_channel_roll_control_in(), -4500.0f,
             4500.0f, -30.0f, 30.0f));
     const float pitch_in = ToRad(remap((float)_copter.get_channel_pitch_control_in(), -4500.0f,
             4500.0f, -30.0f, 30.0f));
-    const float throttle_in = (float)_copter.get_channel_throttle_control_in();
-    const float velocity_z_in = remap(throttle_in, 0.0f, 1000.0f, -0.25f, 0.25f);
     const float yaw_rate_in = ToRad(remap((float)_copter.get_channel_yaw_control_in(), -4500.0f,
             4500.0f, -30.0f, 30.0f));
+#endif
+    const float throttle_in = (float)_copter.get_channel_throttle_control_in();
+    const float velocity_z_in = remap(throttle_in, 0.0f, 1000.0f, -0.25f, 0.25f);
 
     // Send output to each motor.
     uint16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];

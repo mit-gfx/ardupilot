@@ -1928,6 +1928,18 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
         break;
 
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Jan 18, 2016
+    case MAVLINK_MSG_ID_ATTITUDE:
+    {
+        // Decode desired roll, pitch and yaw rate.
+        copter.motors.set_desired_roll(mavlink_msg_attitude_get_roll(msg));
+        copter.motors.set_desired_pitch(mavlink_msg_attitude_get_pitch(msg));
+        copter.motors.set_desired_yaw_rate(mavlink_msg_attitude_get_yawspeed(msg));
+        break;
+    }
+
     }     // end switch
 } // end handle mavlink
 
