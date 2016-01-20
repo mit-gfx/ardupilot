@@ -1933,10 +1933,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     // Jan 18, 2016
     case MAVLINK_MSG_ID_ATTITUDE:
     {
-        // Decode desired roll, pitch and yaw rate.
-        copter.motors.set_desired_roll(mavlink_msg_attitude_get_roll(msg));
-        copter.motors.set_desired_pitch(mavlink_msg_attitude_get_pitch(msg));
-        copter.motors.set_desired_yaw_rate(mavlink_msg_attitude_get_yawspeed(msg));
+        // Decode desired roll, pitch and yaw rate in degree or degree/second.
+        copter.set_vicon_roll_desired(mavlink_msg_attitude_get_roll(msg));
+        copter.set_vicon_pitch_desired(mavlink_msg_attitude_get_pitch(msg));
+        copter.set_vicon_yaw_rate_desired(mavlink_msg_attitude_get_yawspeed(msg));
         break;
     }
 

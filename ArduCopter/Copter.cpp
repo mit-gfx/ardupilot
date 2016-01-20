@@ -132,6 +132,13 @@ Copter::Copter(void) :
     // init sensor error logging flags
     sensor_health.baro = true;
     sensor_health.compass = true;
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Jan 20, 2016
+    vicon_roll_desired = 0.0f;
+    vicon_pitch_desired = 0.0f;
+    vicon_yaw_rate_desired = 0.0f;
 }
 
 Copter copter;

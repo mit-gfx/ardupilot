@@ -133,7 +133,9 @@ public:
     void setup() override;
     void loop() override;
 
-    // Used by Tao Du.
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Jan 20, 2016
     int16_t get_channel_roll_control_in() const { return channel_roll->control_in; }
     int16_t get_channel_pitch_control_in() const { return channel_pitch->control_in; }
     int16_t get_channel_throttle_control_in() const { return channel_throttle->control_in; }
@@ -146,6 +148,17 @@ public:
 
     float get_altitude() const { return inertial_nav.get_altitude(); }
     float get_velocity_z() const { return inertial_nav.get_velocity_z(); }
+
+    // Set VICON data.
+    void set_vicon_roll_desired(const float roll) {
+        vicon_roll_desired = roll;
+    }
+    void set_vicon_pitch_desired(const float pitch) {
+        vicon_pitch_desired = pitch;
+    }
+    void set_vicon_yaw_rate_desired(const float yaw_rate) {
+        vicon_yaw_rate_desired = yaw_rate;
+    }
 
 private:
     // key aircraft parameters passed to multiple libraries
@@ -542,6 +555,14 @@ private:
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Jan 20, 2016
+    // VICON data, the unit is degree or degree/second.
+    float vicon_roll_desired;
+    float vicon_pitch_desired;
+    float vicon_yaw_rate_desired;
 
 #if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,

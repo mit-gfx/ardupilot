@@ -44,12 +44,23 @@ void Copter::althold_run()
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Jan 20, 2016
+    // Override roll, pitch and yaw rate by VICON. Note that angles used here
+    // are all in centi-degrees.
+    float target_roll = vicon_roll_desired * 100.0f;
+    float target_pitch = vicon_pitch_desired * 100.0f;
+    float target_yaw_rate = vicon_yaw_rate_desired * 100.0f;
+
+    /*
     // get pilot desired lean angles
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
 
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+    */
 
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
