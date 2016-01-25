@@ -23,8 +23,8 @@ void setup(void) {
     }
 }
 
-void loop(void) 
-{	
+void loop(void)
+{
     // Get input signal from channel 3(throttle in mode 2).
     uint16_t v = hal.rcin->read(2);
     // Only output the signal when the difference is greater than threshold

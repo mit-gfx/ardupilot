@@ -15,15 +15,15 @@
  */
 
 /*
- *       AP_MotorsFive.cpp - ArduCopter motors library
+ *       AP_MotorsTao.cpp - ArduCopter motors library
  *       Code by Tao Du. MIT CSAIL
  *
  */
 
-#include "AP_MotorsFive.h"
 #include "../../ArduCopter/Copter.h"
 #include <AC_PID/AC_P.h>
 #include <AC_PID/AC_PID.h>
+#include "AP_MotorsTao.h"
 
 #define USE_UNOPTIMIZED
 #define USE_VICON
@@ -47,7 +47,7 @@ static AC_P p_yaw(1.5f);
 //     |
 //     \/
 //     y
-void AP_MotorsFive::setup_motors()
+void AP_MotorsTao::setup_motors()
 {
     // call parent
     AP_MotorsMatrix::setup_motors();
@@ -99,7 +99,7 @@ void AP_MotorsFive::setup_motors()
 }
 
 // Do not use this function.
-void AP_MotorsFive::output_armed_not_stabilizing()
+void AP_MotorsTao::output_armed_not_stabilizing()
 {
     // send output to each motor.
     hal.rcout->cork();
@@ -121,7 +121,7 @@ float clamp(const float in_value, const float in_low, const float in_high) {
     return (in_value < in_low ? in_low : (in_value > in_high ? in_high : in_value));
 }
 
-void AP_MotorsFive::output_armed_stabilizing()
+void AP_MotorsTao::output_armed_stabilizing()
 {
     // Implement our own output_armed_stabilizing function.
     // Input:
@@ -189,7 +189,7 @@ void AP_MotorsFive::output_armed_stabilizing()
 }
 
 
-void AP_MotorsFive::test_input_output() {
+void AP_MotorsTao::test_input_output() {
     // Test whether we can linearly map the input signals. Ideally RCIN and RCOUT curves should
     // overlap perfectly.
 #ifdef USE_VICON

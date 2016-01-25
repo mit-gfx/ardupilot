@@ -329,10 +329,8 @@ void Copter::report_frame()
     cliSerial->printf("Octa frame\n");
  #elif FRAME_CONFIG == HELI_FRAME
     cliSerial->printf("Heli frame\n");
-#elif FRAME_CONFIG == FIVE_FRAME
-    cliSerial->printf("Five frame\n");
-#elif FRAME_CONFIG == BUNNY_FRAME
-    cliSerial->printf("Bunny frame\n");
+#elif FRAME_CONFIG == TAO_FRAME
+    cliSerial->printf("Tao frame\n");
  #endif
 
     print_blanks(2);

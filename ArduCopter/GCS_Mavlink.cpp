@@ -78,7 +78,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
 
     mavlink_msg_heartbeat_send(
         chan,
-#if (FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == BUNNY_FRAME || FRAME_CONFIG == FIVE_FRAME)
+#if (FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == TAO_FRAME)
         MAV_TYPE_QUADROTOR,
 #elif (FRAME_CONFIG == TRI_FRAME)
         MAV_TYPE_TRICOPTER,
