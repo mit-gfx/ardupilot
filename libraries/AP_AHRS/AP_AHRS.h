@@ -272,6 +272,16 @@ public:
         return false;
     }
 
+    // returns the expected NED magnetic field
+    virtual bool get_expected_mag_field_NED(Vector3f &ret) const {
+        return false;
+    }
+
+    // returns the estimated magnetic field offsets in body frame
+    virtual bool get_mag_field_correction(Vector3f &ret) const {
+        return false;
+    }
+
     // return a position relative to home in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
@@ -412,6 +422,11 @@ public:
     // time that the AHRS has been up
     virtual uint32_t uptime_ms(void) const = 0;
 
+    // get the selected ekf type, for allocation decisions
+    int8_t get_ekf_type(void) const {
+        return _ekf_type;
+    }
+    
 protected:
     AHRS_VehicleClass _vehicle_class;
 

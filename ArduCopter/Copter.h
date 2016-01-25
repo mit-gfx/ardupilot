@@ -108,12 +108,9 @@
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 
-
-// AP_HAL to Arduino compatibility layer
 // Configuration
 #include "defines.h"
 #include "config.h"
-#include "config_channels.h"
 
 // Local modules
 #include "Parameters.h"
@@ -371,7 +368,15 @@ private:
     // RTL
     RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
     bool rtl_state_complete; // set to true if the current state is completed
-    float rtl_alt;     // altitude the vehicle is returning at
+
+    struct {
+        // NEU w/ origin-relative altitude
+        Vector3f origin_point;
+        Vector3f climb_target;
+        Vector3f return_target;
+        Vector3f descent_target;
+        bool land;
+    } rtl_path;
 
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
@@ -417,6 +422,9 @@ private:
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
+
+    // filtered pilot's throttle input used to cancel landing if throttle held high
+    LowPassFilterFloat rc_throttle_control_in_filter;
 
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
@@ -695,6 +703,7 @@ private:
     void Log_Write_Heli(void);
 #endif
     void Log_Write_Precland();
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
@@ -841,7 +850,8 @@ private:
     void rtl_descent_run();
     void rtl_land_start();
     void rtl_land_run();
-    float get_RTL_alt();
+    void rtl_build_path();
+    float rtl_compute_return_alt_above_origin(float rtl_return_dist);
     bool sport_init(bool ignore_checks);
     void sport_run();
     bool stabilize_init(bool ignore_checks);
@@ -857,6 +867,7 @@ private:
     void esc_calibration_startup_check();
     void esc_calibration_passthrough();
     void esc_calibration_auto();
+    bool should_disarm_on_failsafe();
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
     void failsafe_battery_event(void);

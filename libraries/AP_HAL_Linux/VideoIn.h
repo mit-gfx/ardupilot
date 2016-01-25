@@ -16,6 +16,7 @@
 
 #include "AP_HAL_Linux.h"
 #include <linux/videodev2.h>
+#include <vector>
 
 struct buffer {
     unsigned int size;
@@ -43,11 +44,25 @@ public:
     void init();
     bool open_device(const char *device_path, uint32_t memtype);
     bool allocate_buffers(uint32_t nbufs);
+    void get_pixel_formats(std::vector<uint32_t> *formats);
     bool set_format(uint32_t *width, uint32_t *height, uint32_t *format,
                     uint32_t *bytesperline, uint32_t *sizeimage);
     bool set_crop(uint32_t left, uint32_t top,
                   uint32_t width, uint32_t height);
     void prepare_capture();
+
+    static void shrink_8bpp(uint8_t *buffer, uint8_t *new_buffer,
+                            uint32_t width, uint32_t height, uint32_t left,
+                            uint32_t selection_width, uint32_t top,
+                            uint32_t selection_height, uint32_t fx, uint32_t fy);
+
+    static void crop_8bpp(uint8_t *buffer, uint8_t *new_buffer,
+                          uint32_t width, uint32_t left,
+                          uint32_t crop_width, uint32_t top,
+                          uint32_t crop_height);
+
+    static void yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size,
+                             uint8_t *new_buffer);
 
 private:
     void _queue_buffer(int index);

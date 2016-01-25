@@ -30,7 +30,8 @@
 class HAL_SITL;
 
 class HALSITL::SITL_State {
-    friend class HALSITL::SITLScheduler;
+    friend class HALSITL::Scheduler;
+    friend class HALSITL::Util;
 public:
     void init(int argc, char * const argv[]);
 
@@ -144,7 +145,7 @@ private:
 
     AP_Baro *_barometer;
     AP_InertialSensor *_ins;
-    SITLScheduler *_scheduler;
+    Scheduler *_scheduler;
     Compass *_compass;
     OpticalFlow *_optical_flow;
     AP_Terrain *_terrain;
@@ -213,6 +214,8 @@ private:
     
     // TCP address to connect uartC to
     const char *_client_address;
+
+    const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

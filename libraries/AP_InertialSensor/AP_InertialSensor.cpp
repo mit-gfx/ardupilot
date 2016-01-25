@@ -358,6 +358,7 @@ AP_InertialSensor::AP_InertialSensor() :
         _delta_velocity_acc_dt[i] = 0;
 
         _delta_angle_acc[i].zero();
+        _delta_angle_acc_dt[i] = 0;
         _last_delta_angle[i].zero();
         _last_raw_gyro[i].zero();
     }
@@ -367,6 +368,8 @@ AP_InertialSensor::AP_InertialSensor() :
     }
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
+
+    AP_AccelCal::register_client(this);
 }
 
 /*
@@ -911,6 +914,7 @@ void AP_InertialSensor::update(void)
             _delta_velocity_acc[i].zero();
             _delta_velocity_acc_dt[i] = 0;
             _delta_angle_acc[i].zero();
+            _delta_angle_acc_dt[i] = 0;
         }
 
         // adjust health status if a sensor has a non-zero error count
@@ -1106,6 +1110,17 @@ float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
     return get_delta_time();
 }
 
+/*
+  return delta_time for the delta_angle
+ */
+float AP_InertialSensor::get_delta_angle_dt(uint8_t i) const
+{
+    if (_delta_angle_valid[i]) {
+        return _delta_angle_dt[i];
+    }
+    return get_delta_time();
+}
+
 
 /*
   support for setting accel and gyro vectors, for use by HIL
@@ -1266,8 +1281,6 @@ void AP_InertialSensor::acal_init()
     if (_accel_calibrator == NULL) {
         _accel_calibrator = new AccelCalibrator[INS_MAX_INSTANCES];
     }
-
-    _acal->register_client(this);
 }
 
 // update accel calibrator
@@ -1321,7 +1334,7 @@ void AP_InertialSensor::_acal_save_calibrations()
                 // determine trim from aligned sample vs misaligned sample
                 Vector3f cross = (misaligned_sample%aligned_sample);
                 float dot = (misaligned_sample*aligned_sample);
-                Quaternion q(sqrt(sq(misaligned_sample.length())*sq(aligned_sample.length()))+dot, cross.x, cross.y, cross.z);
+                Quaternion q(safe_sqrt(sq(misaligned_sample.length())*sq(aligned_sample.length()))+dot, cross.x, cross.y, cross.z);
                 q.normalize();
                 _trim_roll = q.get_euler_roll();
                 _trim_pitch = q.get_euler_pitch();
@@ -1330,7 +1343,7 @@ void AP_InertialSensor::_acal_save_calibrations()
             break;
         default:
             _new_trim = false;
-            //noop
+            /* no break */
     }
 
     if (fabsf(_trim_roll) > radians(10) || 

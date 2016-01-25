@@ -405,6 +405,9 @@
 #ifndef LAND_WITH_DELAY_MS
  # define LAND_WITH_DELAY_MS        4000    // default delay (in milliseconds) when a land-with-delay is triggered during a failsafe event
 #endif
+#ifndef LAND_CANCEL_TRIGGER_THR
+ # define LAND_CANCEL_TRIGGER_THR   700     // land is cancelled by input throttle above 700
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Landing Detector
@@ -494,6 +497,18 @@
 
 #ifndef RTL_CLIMB_MIN_DEFAULT
  # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
+#endif
+
+#ifndef RTL_ABS_MIN_CLIMB
+ # define RTL_ABS_MIN_CLIMB         250     // absolute minimum initial climb
+#endif
+
+#ifndef RTL_CONE_SLOPE
+ # define RTL_CONE_SLOPE            3.0f    // slope of RTL cone (height / distance). 0 = No cone
+#endif
+
+#ifndef RTL_MIN_CONE_SLOPE
+ # define RTL_MIN_CONE_SLOPE        0.5f    // minimum slope of cone
 #endif
 
 #ifndef RTL_LOITER_TIME

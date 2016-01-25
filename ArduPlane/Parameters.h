@@ -276,6 +276,8 @@ public:
         k_param_kff_pitch_to_throttle, // unused
         k_param_kff_throttle_to_pitch,
         k_param_scaling_speed,
+        k_param_quadplane,
+        k_param_rtl_radius,
 
         //
         // 210: flight modes
@@ -382,6 +384,7 @@ public:
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 loiter_radius;
+    AP_Int16 rtl_radius;
 
 #if GEOFENCE_ENABLED == ENABLED
     AP_Int8 fence_action;

@@ -32,6 +32,7 @@
 #define AP_MOTORS_NEW_X_FRAME       11
 #define AP_MOTORS_NEW_V_FRAME       12
 #define AP_MOTORS_NEW_H_FRAME       13   // same as X frame but motors spin in opposite direction
+#define AP_MOTORS_QUADPLANE         14   // motors on 5..8
 #define AP_MOTORS_FIVE_FRAME        20   // Five rotors
 #define AP_MOTORS_BUNNY_FRAME       21   // Bunny copter
 

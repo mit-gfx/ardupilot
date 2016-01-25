@@ -251,7 +251,7 @@ void NavEKF2_core::readIMUData()
     } else {
         readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng);
     }
-    imuDataNew.delAngDT = MAX(ins.get_delta_time(),1.0e-4f);
+    imuDataNew.delAngDT = MAX(ins.get_delta_angle_dt(imu_index),1.0e-4f);
 
     // Get current time stamp
     imuDataNew.time_ms = imuSampleTime_ms;
@@ -262,8 +262,8 @@ void NavEKF2_core::readIMUData()
     imuDataNew.delAng.z = imuDataNew.delAng.z * stateStruct.gyro_scale.z;
 
     // remove sensor bias errors
-    imuDataNew.delAng -= stateStruct.gyro_bias;
-    imuDataNew.delVel.z -= stateStruct.accel_zbias;
+    imuDataNew.delAng -= stateStruct.gyro_bias * (imuDataNew.delAngDT / dtEkfAvg);
+    imuDataNew.delVel.z -= stateStruct.accel_zbias * (imuDataNew.delVelDT / dtEkfAvg);
 
     // Accumulate the measurement time interval for the delta velocity and angle data
     imuDataDownSampledNew.delAngDT += imuDataNew.delAngDT;

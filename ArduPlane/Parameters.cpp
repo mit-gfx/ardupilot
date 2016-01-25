@@ -319,6 +319,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(loiter_radius,          "WP_LOITER_RAD",  LOITER_RADIUS_DEFAULT),
 
+    // @Param: RTL_RADIUS
+    // @DisplayName: RTL loiter radius
+    // @Description: Defines the radius of the loiter circle when in RTL mode. If this is zero then WP_LOITER_RAD is used. If the radius is negative then a counter-clockwise is used. If positive then a clockwise loiter is used.
+    // @Units: Meters
+    // @Range: -32767 32767
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rtl_radius,             "RTL_RADIUS",  0),
+    
 #if GEOFENCE_ENABLED == ENABLED
     // @Param: FENCE_ACTION
     // @DisplayName: Action on geofence breach
@@ -434,6 +443,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Fly By Wire B altitude change rate
     // @Description: This sets the rate in m/s at which FBWB and CRUISE modes will change its target altitude for full elevator deflection. Note that the actual climb rate of the aircraft can be lower than this, depending on your airspeed and throttle control settings. If you have this parameter set to the default value of 2.0, then holding the elevator at maximum deflection for 10 seconds would change the target altitude by 20 meters.
     // @Range: 1 10
+    // @Units: m/s
 	// @Increment: 0.1
     // @User: Standard
     GSCALAR(flybywire_climb_rate, "FBWB_CLIMB_RATE",  2.0f),
@@ -548,8 +558,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_LONG_ACTN
     // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. 
-    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide
+    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTION is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). 
+    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute
     // @User: Standard
     GSCALAR(long_fs_action,         "FS_LONG_ACTN",   LONG_FAILSAFE_ACTION),
 
@@ -1034,6 +1044,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
     GOBJECT(adsb,                "ADSB_", AP_ADSB),
 
+    // @Group: Q_
+    // @Path: quadplane.cpp
+    GOBJECT(quadplane,           "Q_", QuadPlane),
+    
     // RC channel
     //-----------
     // @Group: RC1_
@@ -1282,11 +1296,11 @@ void Plane::load_parameters(void)
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
         cliSerial->println("done.");
-    } else {
-        uint32_t before = micros();
-        // Load all auto-loaded EEPROM variables
-        AP_Param::load_all();
-        AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-        cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
     }
+
+    uint32_t before = micros();
+    // Load all auto-loaded EEPROM variables
+    AP_Param::load_all();
+    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
+    cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

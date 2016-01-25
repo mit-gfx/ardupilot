@@ -144,6 +144,11 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
+#if PRECISION_LANDING == ENABLED
+    if (precland.enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    }
+#endif
     if (ap.rc_receiver_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
@@ -193,6 +198,11 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
 #if OPTFLOW == ENABLED
     if (optflow.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
+#if PRECISION_LANDING == ENABLED
+    if (precland.healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif
     if (ap.rc_receiver_present && !failsafe.radio) {
@@ -1008,7 +1018,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_MODE:       // MAV ID: 11
     {
+#ifdef DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
+        if (!copter.failsafe.radio) {
+            handle_set_mode(msg, FUNCTOR_BIND(&copter, &Copter::set_mode, bool, uint8_t));
+        } else {
+            // don't allow mode changes while in radio failsafe
+            mavlink_msg_command_ack_send_buf(msg, chan, MAVLINK_MSG_ID_SET_MODE, MAV_RESULT_FAILED);
+        }
+#else
         handle_set_mode(msg, FUNCTOR_BIND(&copter, &Copter::set_mode, bool, uint8_t));
+#endif
         break;
     }
 
@@ -1034,6 +1053,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_SET:     // 23
     {
         handle_param_set(msg, &copter.DataFlash);
+        break;
+    }
+
+    case MAVLINK_MSG_ID_PARAM_VALUE:
+    {
+#if MOUNT == ENABLED
+        copter.camera_mount.handle_param_value(msg);
+#endif
         break;
     }
 
@@ -1698,7 +1725,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     break;
                 case MAV_FRAME_GLOBAL_INT:
                 default:
-                    loc.flags.relative_alt = false;
+                    // Copter does not support navigation to absolute altitudes. This convert the WGS84 altitude
+                    // to a home-relative altitude before passing it to the navigation controller
+                    loc.alt -= copter.ahrs.get_home().alt;
+                    loc.flags.relative_alt = true;
                     loc.flags.terrain_alt = false;
                     break;
             }
