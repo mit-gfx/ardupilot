@@ -130,6 +130,7 @@ public:
     void setup() override;
     void loop() override;
 
+#if FRAME_CONFIG == TAO_FRAME
     // Tao Du
     // taodu@csail.mit.edu
     // Jan 20, 2016
@@ -147,15 +148,25 @@ public:
     float get_velocity_z() const { return inertial_nav.get_velocity_z(); }
 
     // Set VICON data.
-    void set_vicon_roll_desired(const float roll) {
-        vicon_roll_desired = roll;
+    void set_vicon_desired_roll(const float roll) {
+        motors.set_desired_roll(roll);
     }
-    void set_vicon_pitch_desired(const float pitch) {
-        vicon_pitch_desired = pitch;
+    void set_vicon_desired_pitch(const float pitch) {
+        motors.set_desired_pitch(pitch);
     }
-    void set_vicon_yaw_rate_desired(const float yaw_rate) {
-        vicon_yaw_rate_desired = yaw_rate;
+    void set_vicon_desired_yaw(const float yaw) {
+        motors.set_desired_yaw(yaw);
     }
+    void set_vicon_actual_roll(const float roll) {
+        motors.set_actual_roll(roll);
+    }
+    void set_vicon_actual_pitch(const float pitch) {
+        motors.set_actual_pitch(pitch);
+    }
+    void set_vicon_actual_yaw(const float yaw) {
+        motors.set_actual_yaw(yaw);
+    }
+#endif
 
 private:
     // key aircraft parameters passed to multiple libraries
@@ -561,14 +572,6 @@ private:
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
-
-    // Tao Du
-    // taodu@csail.mit.edu
-    // Jan 20, 2016
-    // VICON data, the unit is degree or degree/second.
-    float vicon_roll_desired;
-    float vicon_pitch_desired;
-    float vicon_yaw_rate_desired;
 
 #if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,

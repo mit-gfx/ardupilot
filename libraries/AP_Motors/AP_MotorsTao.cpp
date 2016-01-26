@@ -21,57 +21,40 @@
  */
 
 #include "../../ArduCopter/Copter.h"
-#include <AC_PID/AC_P.h>
 #include <AC_PID/AC_PID.h>
 #include "AP_MotorsTao.h"
 
-#define USE_UNOPTIMIZED
-#define USE_VICON
-
 extern const AP_HAL::HAL& hal;
 
-// PID controllers for roll, pitch, yaw angles and climb rate.
-static AC_PID pid_roll(0.5f, 0.4f, 0.3f, 50.0f, RATE_ROLL_FILT_HZ, MAIN_LOOP_SECONDS);
-static AC_PID pid_pitch(1.0f, 0.8f, 0.5f, 50.0f, RATE_ROLL_FILT_HZ, MAIN_LOOP_SECONDS);
-static AC_P p_throttle(20.0f);
-static AC_P p_yaw(1.5f);
+#ifndef TAO_COPTER_FRAME
+    #define TAO_COPTER_FRAME    QUAD_COPTER
+#endif
 
-// setup_motors - configures the motors for five rotors.
-// The order of all the 5 rotors:
-//  4 CW------ 2 CCW
-//         |---------- 5 CCW
-//  3 CCW ---- 1 CW
-//
-//     ------>x
-//     |
-//     |
-//     \/
-//     y
-void AP_MotorsTao::setup_motors()
+#define FIVE_COPTER     0
+#define BUNNY_COPTER    1
+#define QUAD_COPTER     2
+
+// PID controllers for roll, pitch and yaw.
+static AC_PID pid_roll(5.0f, 1.0f, 0.1f, 50.0f, RATE_ROLL_FILT_HZ, MAIN_LOOP_SECONDS);
+static AC_PID pid_pitch(5.0f, 1.0f, 0.1f, 50.0f, RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS);
+static AC_PID pid_yaw(5.0f, 1.0f, 0.0f, 50.0f, RATE_YAW_FILT_HZ, MAIN_LOOP_SECONDS);
+
+void AP_MotorsTao::setup_five_motors()
 {
+    // setup_motors - configures the motors for five rotors.
+    // The order of all the 5 rotors:
+    //  4 CW------ 2 CCW
+    //         |---------- 5 CCW
+    //  3 CCW ---- 1 CW
+    //
+    //     ------>x
+    //     |
+    //     |
+    //     \/
+    //     y
+
     // call parent
     AP_MotorsMatrix::setup_motors();
-
-#ifdef USE_UNOPTIMIZED
-    // Unoptimized parameters.
-    add_motor_raw(AP_MOTORS_MOT_1,  -1.1930f,   0.5418f,  -3.0075f,  1);
-    add_motor_raw(AP_MOTORS_MOT_2,   1.1930f,   0.0500f,   1.6198f,  2);
-    add_motor_raw(AP_MOTORS_MOT_3,  -1.1930f,  -1.0336f,   2.6348f,  3);
-    add_motor_raw(AP_MOTORS_MOT_4,   1.1930f,  -0.5418f,  -1.9925f,  4);
-    add_motor_raw(AP_MOTORS_MOT_5,      0.0f,   0.9836f,   0.7454f,  5);
-
-    // Set up the throttle factors.
-    for(int8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        _throttle_factor[i] = 0.0f;
-    }
-
-    const float normalized_factor = 0.2681f;
-    _throttle_factor[AP_MOTORS_MOT_1] = 0.2319f / normalized_factor;
-    _throttle_factor[AP_MOTORS_MOT_2] = 0.1650f / normalized_factor;
-    _throttle_factor[AP_MOTORS_MOT_3] = 0.2011f / normalized_factor;
-    _throttle_factor[AP_MOTORS_MOT_4] = 0.2681f / normalized_factor;
-    _throttle_factor[AP_MOTORS_MOT_5] = 0.1339f / normalized_factor;
-#else
     // Optimized parameters.
     // -0.621183    0.807174    -2.87231    0.204073
     // 1.07771      0.110314    1.26664     0.21262
@@ -95,6 +78,41 @@ void AP_MotorsTao::setup_motors()
     _throttle_factor[AP_MOTORS_MOT_3] = 0.21838f / normalized_factor;
     _throttle_factor[AP_MOTORS_MOT_4] = 0.233993f / normalized_factor;
     _throttle_factor[AP_MOTORS_MOT_5] = 0.172848f / normalized_factor;
+}
+
+void AP_MotorsTao::setup_bunny_motors() {
+    // TODO
+}
+
+void AP_MotorsTao::setup_quad_motors() {
+    // call parent
+    AP_MotorsMatrix::setup_motors();
+
+    add_motor_raw(AP_MOTORS_MOT_1, -1.0f,   1.0f,   1.0f,   1);
+    add_motor_raw(AP_MOTORS_MOT_2,  1.0f,  -1.0f,   1.0f,   2);
+    add_motor_raw(AP_MOTORS_MOT_3,  1.0f,   1.0f,  -1.0f,   3);
+    add_motor_raw(AP_MOTORS_MOT_4, -1.0f,  -1.0f,  -1.0f,   4);
+
+    // Set up the throttle factors.
+    for(int8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+        _throttle_factor[i] = 0.0f;
+    }
+
+    _throttle_factor[AP_MOTORS_MOT_1] = 1.0f;
+    _throttle_factor[AP_MOTORS_MOT_2] = 1.0f;
+    _throttle_factor[AP_MOTORS_MOT_3] = 1.0f;
+    _throttle_factor[AP_MOTORS_MOT_4] = 1.0f;
+}
+
+void AP_MotorsTao::setup_motors() {
+#if TAO_COPTER_FRAME == FIVE_COPTER
+    setup_five_motors();
+#elif TAO_COPTER_FRAME == BUNNY_COPER
+    setup_bunny_motors();
+#elif TAO_COPTER_FRAME == QUAD_COPTER
+    setup_quad_motors();
+#else
+    // TODO.
 #endif
 }
 
@@ -124,57 +142,29 @@ float clamp(const float in_value, const float in_low, const float in_high) {
 void AP_MotorsTao::output_armed_stabilizing()
 {
     // Implement our own output_armed_stabilizing function.
-    // Input:
-    // Desired input:
-    // roll/pitch/yaw: +/-30 degree or degree/second(actually in radians)
-    // velocity_z: -0.25m/s to 0.25m/s.
-    // These values have been tested.
-#ifdef USE_VICON
-    const float roll_in = ToRad(_desired_roll);
-    const float pitch_in = ToRad(_desired_pitch);
-    const float yaw_rate_in = ToRad(_desired_yaw_rate);
-#else
-    const float roll_in = ToRad(remap((float)_copter.get_channel_roll_control_in(), -4500.0f,
-            4500.0f, -30.0f, 30.0f));
-    const float pitch_in = ToRad(remap((float)_copter.get_channel_pitch_control_in(), -4500.0f,
-            4500.0f, -30.0f, 30.0f));
-    const float yaw_rate_in = ToRad(remap((float)_copter.get_channel_yaw_control_in(), -4500.0f,
-            4500.0f, -30.0f, 30.0f));
-#endif
     const float throttle_in = (float)_copter.get_channel_throttle_control_in();
-    const float velocity_z_in = remap(throttle_in, 0.0f, 1000.0f, -0.25f, 0.25f);
 
-    // Actual input:
-    // Euler angles in radians or radians/seconds. Use ToDeg to convert to degrees when necessary.
-    const float roll_actual = _copter.get_ahrs_roll();
-    const float pitch_actual = _copter.get_ahrs_pitch();
-    const float yaw_rate_actual = _copter.get_ahrs_yaw_rate_earth();
-    // altitude in meters.
-    const float altitude_actual = _copter.get_altitude() / 100.0;
-    // climb rate in m/s, positive up.
-    const float velocity_z = _copter.get_velocity_z() / 100.0;
-
-    // Output:
-    // signals to each motor.
-    pid_roll.set_input_filter_d(roll_in - roll_actual);
+    pid_roll.set_input_filter_d(_desired_roll - _actual_roll);
     const float roll_torque = pid_roll.get_pid();
-    pid_pitch.set_input_filter_d(pitch_in - pitch_actual);
+    pid_pitch.set_input_filter_d(_desired_pitch - _actual_pitch);
     const float pitch_torque = pid_pitch.get_pid();
-    const float yaw_torque = p_yaw.get_p(yaw_rate_in - yaw_rate_actual);
+    pid_yaw.set_input_filter_d(_desired_yaw - _actual_yaw);
+    const float yaw_torque = pid_yaw.get_pid();
 
     // Compute the contribution of each motor.
     uint16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];
     for (int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         motor_out[i] = _throttle_radio_min;
         if (motor_enabled[i]) {
-            const float attitude_thrust = _roll_factor[i] * roll_torque
-                    + _pitch_factor[i] * pitch_torque
-                    + _yaw_factor[i] * yaw_torque;
             // Convert it to pwm.
-            const float pwm = (float)_throttle_radio_min + _throttle_factor[i] * throttle_in
-                    + remap(attitude_thrust, -2.0f, 2.0f, -300.0f, 300.0f);
+            const float pwm = (float)_throttle_radio_min
+                    + _roll_factor[i] * roll_torque
+                    + _pitch_factor[i] * pitch_torque
+                    + _yaw_factor[i] * yaw_torque
+                    + _throttle_factor[i] * throttle_in;
             // Clamp.
-            motor_out[i] = (uint16_t)clamp(pwm, (float)_throttle_radio_min, (float)_throttle_radio_max);
+            motor_out[i] = (uint16_t)clamp(pwm, (float)_throttle_radio_min,
+                    (float)_throttle_radio_max);
         }
     }
 
@@ -189,49 +179,59 @@ void AP_MotorsTao::output_armed_stabilizing()
 }
 
 
-void AP_MotorsTao::test_input_output() {
-    // Test whether we can linearly map the input signals. Ideally RCIN and RCOUT curves should
-    // overlap perfectly.
-#ifdef USE_VICON
-    const float roll_in = ToRad(_desired_roll);
-    const float pitch_in = ToRad(_desired_pitch);
-    const float yaw_rate_in = ToRad(_desired_yaw_rate);
-#else
+void AP_MotorsTao::test_input_from_rc() {
     // Get input from RC transmitter.
-    const float roll_in = ToRad(remap((float)_copter.get_channel_roll_control_in(), -4500.0f,
-            4500.0f, -30.0f, 30.0f));
-    const float pitch_in = ToRad(remap((float)_copter.get_channel_pitch_control_in(), -4500.0f,
-            4500.0f, -30.0f, 30.0f));
-    const float yaw_rate_in = ToRad(remap((float)_copter.get_channel_yaw_control_in(), -4500.0f,
-            4500.0f, -30.0f, 30.0f));
-#endif
-    const float throttle_in = (float)_copter.get_channel_throttle_control_in();
-    const float velocity_z_in = remap(throttle_in, 0.0f, 1000.0f, -0.25f, 0.25f);
-
-    // Send output to each motor.
-    uint16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];
-    for (int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        motor_out[i] = _throttle_radio_min;
-    }
     // Min/max input values from the transmitter.
-    const float roll_min = 1103.0f;
-    const float roll_max = 1924.0f;
-    const float pitch_min = 1103.0f;
-    const float pitch_max = 1924.0f;
-    const float altitude_min = 1094.0f;
-    const float altitude_max = 1924.0f;
-    const float yaw_min = 1103.0f;
-    const float yaw_max = 1924.0f;
-    motor_out[0] = (uint16_t)remap(roll_in, ToRad(-30.0f), ToRad(30.0f), roll_min, roll_max);
-    motor_out[1] = (uint16_t)remap(pitch_in, ToRad(-30.0f), ToRad(30.0f), pitch_min, pitch_max);
-    motor_out[2] = (uint16_t)remap(throttle_in, 0.0f, 1000.0f, altitude_min, altitude_max);
-    motor_out[3] = (uint16_t)remap(yaw_rate_in, ToRad(-30.0f), ToRad(30.0f), yaw_min, yaw_max);
+    const float roll_min = 1040.0f;
+    const float roll_max = 1869.0f;
+    const float pitch_min = 1042.0f;
+    const float pitch_max = 1870.0f;
+    const float thrust_min = 1042.0f;
+    const float thrust_max = 1870.0f;
+    const float yaw_min = 1043.0f;
+    const float yaw_max = 1870.0f;
+
+    const float roll_in = remap((float)_copter.get_channel_roll_control_in(), -4500.0f,
+            4500.0f, roll_min, roll_max);
+    const float pitch_in = remap((float)_copter.get_channel_pitch_control_in(), -4500.0f,
+            4500.0f, pitch_min, pitch_max);
+    const float throttle_in = remap((float)_copter.get_channel_throttle_control_in(), 0.0f,
+            1000.0f, thrust_min, thrust_max);
+    const float yaw_in = remap((float)_copter.get_channel_yaw_control_in(), -4500.0f,
+            4500.0f, yaw_min, yaw_max);
+
+    uint16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];
+    motor_out[AP_MOTORS_MOT_1] = (uint16_t)roll_in;
+    motor_out[AP_MOTORS_MOT_2] = (uint16_t)pitch_in;
+    motor_out[AP_MOTORS_MOT_3] = (uint16_t)throttle_in;
+    motor_out[AP_MOTORS_MOT_4] = (uint16_t)yaw_in;
 
     hal.rcout->cork();
     for(int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         if(motor_enabled[i]) {
             rc_write(i, motor_out[i]);
         }
+    }
+    hal.rcout->push();
+}
+
+void AP_MotorsTao::test_vicon_data() {
+    // Test vicon data can be received successfully.
+    // Remember that all the angles are in degree, and are roughly
+    // between -15 to 15 degrees.
+
+    float motor_out[AP_MOTORS_MAX_NUM_MOTORS];
+    motor_out[AP_MOTORS_MOT_1] = _desired_roll;
+    motor_out[AP_MOTORS_MOT_2] = _desired_pitch;
+    motor_out[AP_MOTORS_MOT_3] = _desired_yaw;
+    motor_out[AP_MOTORS_MOT_4] = _actual_roll;
+    motor_out[AP_MOTORS_MOT_5] = _actual_pitch;
+    motor_out[AP_MOTORS_MOT_6] = _actual_yaw;
+
+    const float angle_scale = 20.0f;
+    hal.rcout->cork();
+    for(int i = 0; i < 6; ++i) {
+        rc_write(i, (uint16_t)(1500.0f + motor_out[i] * angle_scale));
     }
     hal.rcout->push();
 }
