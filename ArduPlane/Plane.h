@@ -3,8 +3,8 @@
 #ifndef _PLANE_H
 #define _PLANE_H
 
-#define THISFIRMWARE "ArduPlane V3.5.0beta1"
-#define FIRMWARE_VERSION 3,5,0,FIRMWARE_VERSION_TYPE_BETA
+#define THISFIRMWARE "ArduPlane V3.5.0beta2"
+#define FIRMWARE_VERSION 3,5,0,FIRMWARE_VERSION_TYPE_BETA+1
 
 /*
    Lead developer: Andrew Tridgell
@@ -720,6 +720,11 @@ private:
 
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // the crc of the last created PX4Mixer
+    int32_t last_mixer_crc = -1;
+#endif // CONFIG_HAL_BOARD
     
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
@@ -864,7 +869,7 @@ private:
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
     bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);
-    bool create_mixer(char *buf, uint16_t buf_size, const char *filename);
+    uint16_t create_mixer(char *buf, uint16_t buf_size, const char *filename);
     bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
@@ -933,6 +938,7 @@ private:
     void one_second_loop(void);
     void airspeed_ratio_update(void);
     void update_mount(void);
+    void update_trigger(void);    
     void log_perf_info(void);
     void compass_save(void);
     void update_logging1(void);
