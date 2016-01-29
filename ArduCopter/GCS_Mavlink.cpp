@@ -78,7 +78,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
 
     mavlink_msg_heartbeat_send(
         chan,
-#if (FRAME_CONFIG == QUAD_FRAME)
+#if (FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == TAO_FRAME)
         MAV_TYPE_QUADROTOR,
 #elif (FRAME_CONFIG == TRI_FRAME)
         MAV_TYPE_TRICOPTER,
@@ -1787,6 +1787,24 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 #endif // AC_RALLY == ENABLED
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Jan 29, 2016
+    case MAVLINK_MSG_ID_ATTITUDE: {
+        // Decode VICON data, all in degree or degree/second.
+        copter.set_vicon_desired_roll_pitch_yaw(
+                mavlink_msg_attitude_get_roll(msg),
+                mavlink_msg_attitude_get_pitch(msg),
+                mavlink_msg_attitude_get_yaw(msg)
+        );
+        copter.set_vicon_actual_roll_pitch_yaw(
+                mavlink_msg_attitude_get_rollspeed(msg),
+                mavlink_msg_attitude_get_pitchspeed(msg),
+                mavlink_msg_attitude_get_yawspeed(msg)
+        );
+        break;
+    }
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);

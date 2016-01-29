@@ -126,6 +126,53 @@ class Copter {
     void setup();
     void loop();
 
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Jan 29, 2016
+    int16_t get_channel_roll_control_in() const {
+        return channel_roll->control_in;
+    }
+    int16_t get_channel_pitch_control_in() const {
+        return channel_pitch->control_in;
+    }
+    int16_t get_channel_throttle_control_in() const {
+        return channel_throttle->control_in;
+    }
+    int16_t get_channel_yaw_control_in() const {
+        return channel_yaw->control_in;
+    }
+
+    void set_vicon_desired_roll_pitch_yaw(const float roll,
+            const float pitch, const float yaw) {
+        vicon_desired_roll = roll;
+        vicon_desired_pitch = pitch;
+        vicon_desired_yaw = yaw;
+    }
+    void set_vicon_actual_roll_pitch_yaw(const float roll,
+            const float pitch, const float yaw) {
+        vicon_actual_roll = roll;
+        vicon_actual_pitch = pitch;
+        vicon_actual_yaw = yaw;
+    }
+    float get_vicon_desired_roll() const {
+        return vicon_desired_roll;
+    }
+    float get_vicon_desired_pitch() const {
+        return vicon_desired_pitch;
+    }
+    float get_vicon_desired_yaw() const {
+        return vicon_desired_yaw;
+    }
+    float get_vicon_actual_roll() const {
+        return vicon_actual_roll;
+    }
+    float get_vicon_actual_pitch() const {
+        return vicon_actual_pitch;
+    }
+    float get_vicon_actual_yaw() const {
+        return vicon_actual_yaw;
+    }
+
 private:
 
     // key aircraft parameters passed to multiple libraries
@@ -303,6 +350,8 @@ private:
  #define MOTOR_CLASS AP_MotorsSingle
 #elif FRAME_CONFIG == COAX_FRAME
  #define MOTOR_CLASS AP_MotorsCoax
+#elif FRAME_CONFIG == TAO_FRAME
+ #define MOTOR_CLASS AP_MotorsTao
 #else
  #error Unrecognised frame type
 #endif
@@ -509,6 +558,16 @@ private:
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Jan 29, 2016
+    float vicon_desired_roll;
+    float vicon_desired_pitch;
+    float vicon_desired_yaw;
+    float vicon_actual_roll;
+    float vicon_actual_pitch;
+    float vicon_actual_yaw;
 
 #if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
