@@ -142,6 +142,25 @@ class Copter {
         return channel_yaw->control_in;
     }
 
+    float get_roll() const {
+        return ToDeg(ahrs.roll);
+    }
+    float get_pitch() const {
+        return ToDeg(ahrs.pitch);
+    }
+    float get_yaw() const {
+        return ToDeg(ahrs.yaw);
+    }
+    float get_roll_rate() const {
+        return ToDeg(ahrs.get_gyro().x);
+    }
+    float get_pitch_rate() const {
+        return ToDeg(ahrs.get_gyro().y);
+    }
+    float get_yaw_rate() const {
+        return ToDeg(ahrs.get_gyro().z);
+    }
+
     void set_vicon_desired_roll_pitch_yaw(const float roll,
             const float pitch, const float yaw) {
         vicon_desired_roll = roll;

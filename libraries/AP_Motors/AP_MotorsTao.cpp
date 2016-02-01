@@ -35,9 +35,27 @@ extern const AP_HAL::HAL& hal;
 #define QUAD_COPTER     2
 
 // PID controllers for roll, pitch and yaw.
-static AC_PID pid_roll(5.0f, 1.0f, 0.1f, 50.0f, RATE_ROLL_FILT_HZ, MAIN_LOOP_SECONDS);
-static AC_PID pid_pitch(5.0f, 1.0f, 0.1f, 50.0f, RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS);
-static AC_PID pid_yaw(5.0f, 1.0f, 0.0f, 50.0f, RATE_YAW_FILT_HZ, MAIN_LOOP_SECONDS);
+static AC_P pid_roll(4.5f);
+static AC_P pid_pitch(4.5f);
+static AC_P pid_yaw(10.0f);
+static AC_PID pid_roll_rate(0.7f, 1.0f, 0.0f, 50.0f, RATE_ROLL_FILT_HZ, MAIN_LOOP_SECONDS);
+static AC_PID pid_pitch_rate(0.7f, 1.0f ,0.0f, 50.0f, RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS);
+static AC_PID pid_yaw_rate(2.7f, 1.0f, 0.0f, 50.0f, RATE_YAW_FILT_HZ, MAIN_LOOP_SECONDS);
+
+// Definitions of helper functions.
+float remap(const float in_value, const float in_low, const float in_high,
+        const float out_low, const float out_high) {
+    if (in_low == in_high) return (out_low + out_high) / 2.0;
+    return (in_value - in_low) / (in_high - in_low) * (out_high - out_low) + out_low;
+}
+
+float clamp(const float in_value, const float in_low, const float in_high) {
+    return (in_value < in_low ? in_low : (in_value > in_high ? in_high : in_value));
+}
+
+float wrap180(const float x) {
+    return x < -180.0f ? (x + 360.0f) : (x > 180.0f ? (x - 360.0f) : x);
+}
 
 void AP_MotorsTao::setup_five_motors()
 {
@@ -127,60 +145,61 @@ void AP_MotorsTao::output_armed_not_stabilizing()
     }
 }
 
-float remap(const float in_value, const float in_low, const float in_high,
-        const float out_low, const float out_high) {
-    if (in_low == in_high) return (out_low + out_high) / 2.0;
-    return (in_value - in_low) / (in_high - in_low) * (out_high - out_low) + out_low;
-}
-
-float clamp(const float in_value, const float in_low, const float in_high) {
-    return (in_value < in_low ? in_low : (in_value > in_high ? in_high : in_value));
-}
-
 void AP_MotorsTao::output_armed_stabilizing()
 {
-    // Implement our own output_armed_stabilizing function.
-    const float throttle_in = (float)_copter.get_channel_throttle_control_in();
+    // Get desired roll, pitch and yaw angles, in degrees.
+    const float roll_pitch_min = -45.0f, roll_pitch_max = 45.0f;
+    const float yaw_rate_min = -45.0f, yaw_rate_max = 45.0f;
+    const float desired_roll = remap((float)_copter.get_channel_roll_control_in(),
+            -4500.0f, 4500.0f, roll_pitch_min, roll_pitch_max);
+    const float desired_pitch = remap((float)_copter.get_channel_pitch_control_in(),
+            -4500.0f, 4500.0f, roll_pitch_min, roll_pitch_max);
+    const float desired_yaw_rate = remap((float)_copter.get_channel_yaw_control_in(),
+            -4500.0f, 4500.0f, yaw_rate_min, yaw_rate_max);
+    // Get desired throttle input, between 0 and 1000.
+    const float thrust_in = remap((float)_copter.get_channel_throttle_control_in(),
+            0.0f, 1000.0f, 0.0f, (float)(_throttle_radio_max - _throttle_radio_min));
+    // Get actual angles in degrees.
+    const float actual_roll = _copter.get_roll();
+    const float actual_pitch = _copter.get_pitch();
+    const float actual_roll_rate = _copter.get_roll_rate();
+    const float actual_pitch_rate = _copter.get_pitch_rate();
+    const float actual_yaw_rate = _copter.get_yaw_rate();
 
-    const float desired_roll = _copter.get_vicon_desired_roll();
-    const float desired_pitch = _copter.get_vicon_desired_pitch();
-    const float desired_yaw = _copter.get_vicon_desired_yaw();
-    const float actual_roll = _copter.get_vicon_actual_roll();
-    const float actual_pitch = _copter.get_vicon_actual_pitch();
-    const float actual_yaw = _copter.get_vicon_actual_yaw();
+    // Call stabilize pid.
+    const float roll_pitch_rate_bound = 250.0f, yaw_rate_bound = 360.0f;
+    const float desired_roll_rate = clamp(pid_roll.get_p(desired_roll - actual_roll),
+            -roll_pitch_rate_bound, roll_pitch_rate_bound);
+    const float desired_pitch_rate = clamp(pid_pitch.get_p(desired_pitch - actual_pitch),
+            -roll_pitch_rate_bound, roll_pitch_rate_bound);
 
-    pid_roll.set_input_filter_d(desired_roll - actual_roll);
-    const float roll_torque = pid_roll.get_pid();
-    pid_pitch.set_input_filter_d(desired_pitch - actual_pitch);
-    const float pitch_torque = pid_pitch.get_pid();
-    pid_yaw.set_input_filter_d(desired_yaw - actual_yaw);
-    const float yaw_torque = pid_yaw.get_pid();
+    // Call rate pid.
+    const float pwm_bound = 500.0f;
+    pid_roll_rate.set_input_filter_d(desired_roll_rate - actual_roll_rate);
+    const float roll_pwm = clamp(pid_roll_rate.get_pid(), -pwm_bound, pwm_bound);
+    pid_pitch_rate.set_input_filter_d(desired_pitch_rate - actual_pitch_rate);
+    const float pitch_pwm = clamp(pid_pitch_rate.get_pid(), -pwm_bound, pwm_bound);
+    pid_yaw_rate.set_input_filter_d(desired_yaw_rate - actual_yaw_rate);
+    const float yaw_pwm = clamp(pid_yaw_rate.get_pid(), -pwm_bound, pwm_bound);
 
-    // Compute the contribution of each motor.
-    uint16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];
-    for (int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        motor_out[i] = _throttle_radio_min;
-        if (motor_enabled[i]) {
-            // Convert it to pwm.
-            const float pwm = (float)_throttle_radio_min
-                    + _roll_factor[i] * roll_torque
-                    + _pitch_factor[i] * pitch_torque
-                    + _yaw_factor[i] * yaw_torque
-                    + _throttle_factor[i] * throttle_in;
-            // Clamp.
-            motor_out[i] = (uint16_t)clamp(pwm, (float)_throttle_radio_min,
-                    (float)_throttle_radio_max);
-        }
+    // Send output motor values.
+    float motor_out[AP_MOTORS_MAX_NUM_MOTORS];
+    for (int i = 0; i < 4; ++i) {
+        motor_out[i] = (float)_throttle_radio_min
+                + _throttle_factor[i] * thrust_in
+                + _roll_factor[i] * roll_pwm
+                + _pitch_factor[i] * pitch_pwm
+                + _yaw_factor[i] * yaw_pwm;
+        // Clamp the output.
+        motor_out[i] = clamp(motor_out[i], (float)_throttle_radio_min,
+                (float)_throttle_radio_max);
     }
 
-    // send output to each motor
-    for(int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        if(motor_enabled[i]) {
-            hal.rcout->write(i, motor_out[i]);
-        }
+    // Send signals out.
+    for (int i = 0; i < 4; ++i) {
+        hal.rcout->write(i, (uint16_t)motor_out[i]);
     }
 }
-
 
 void AP_MotorsTao::test_input_from_rc() {
     // Get input from RC transmitter.
