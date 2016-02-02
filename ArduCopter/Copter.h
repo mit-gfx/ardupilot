@@ -160,6 +160,10 @@ class Copter {
     float get_yaw_rate() const {
         return ToDeg(ahrs.get_gyro().z);
     }
+    // Return the climbrate in meter/seconds.
+    float get_z_rate() const {
+        return inertial_nav.get_velocity_z() / 100.0f;
+    }
 
     void set_vicon_desired_roll_pitch_yaw(const float roll,
             const float pitch, const float yaw) {
@@ -173,6 +177,13 @@ class Copter {
         vicon_actual_pitch = pitch;
         vicon_actual_yaw = yaw;
     }
+    void set_vicon_x_y_z(const float x,
+            const float y, const float z) {
+        vicon_x = x;
+        vicon_y = y;
+        vicon_z = z;
+    }
+
     float get_vicon_desired_roll() const {
         return vicon_desired_roll;
     }
@@ -190,6 +201,15 @@ class Copter {
     }
     float get_vicon_actual_yaw() const {
         return vicon_actual_yaw;
+    }
+    float get_vicon_x() const {
+        return vicon_x;
+    }
+    float get_vicon_y() const {
+        return vicon_y;
+    }
+    float get_vicon_z() const {
+        return vicon_z;
     }
 
 private:
@@ -587,6 +607,9 @@ private:
     float vicon_actual_roll;
     float vicon_actual_pitch;
     float vicon_actual_yaw;
+    float vicon_x;
+    float vicon_y;
+    float vicon_z;
 
 #if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,

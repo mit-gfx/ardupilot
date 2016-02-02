@@ -141,6 +141,7 @@ Copter::Copter(void) :
     // Jan 29, 2016
     vicon_desired_roll = vicon_desired_pitch = vicon_desired_yaw = 0.0f;
     vicon_actual_roll = vicon_actual_pitch = vicon_actual_yaw = 0.0f;
+    vicon_x = vicon_y = vicon_z = 0.0f;
 }
 
 Copter copter;

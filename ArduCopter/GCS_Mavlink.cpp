@@ -1792,6 +1792,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     // taodu@csail.mit.edu
     // Jan 29, 2016
     case MAVLINK_MSG_ID_ATTITUDE: {
+        // Try to get the altitude only. z is in meters and positive up.
+        copter.set_vicon_x_y_z(0.0f, 0.0f, mavlink_msg_attitude_get_yaw(msg));
+        /*
         // Decode VICON data, all in degree or degree/second.
         copter.set_vicon_desired_roll_pitch_yaw(
                 mavlink_msg_attitude_get_roll(msg),
@@ -1803,6 +1806,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 mavlink_msg_attitude_get_pitchspeed(msg),
                 mavlink_msg_attitude_get_yawspeed(msg)
         );
+        */
         break;
     }
 

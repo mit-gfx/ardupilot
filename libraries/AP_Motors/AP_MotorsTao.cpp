@@ -38,9 +38,11 @@ extern const AP_HAL::HAL& hal;
 static AC_P pid_roll(4.5f);
 static AC_P pid_pitch(4.5f);
 static AC_P pid_yaw(10.0f);
+static AC_P pid_z(4.5f);
 static AC_PID pid_roll_rate(0.7f, 1.0f, 0.0f, 50.0f, RATE_ROLL_FILT_HZ, MAIN_LOOP_SECONDS);
 static AC_PID pid_pitch_rate(0.7f, 1.0f ,0.0f, 50.0f, RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS);
 static AC_PID pid_yaw_rate(2.7f, 1.0f, 0.0f, 50.0f, RATE_YAW_FILT_HZ, MAIN_LOOP_SECONDS);
+static AC_PID pid_z_rate(2.7f, 1.0f, 0.0f, 50.0f, RATE_YAW_FILT_HZ, MAIN_LOOP_SECONDS);
 
 // Definitions of helper functions.
 float remap(const float in_value, const float in_low, const float in_high,
@@ -156,15 +158,19 @@ void AP_MotorsTao::output_armed_stabilizing()
             -4500.0f, 4500.0f, roll_pitch_min, roll_pitch_max);
     const float desired_yaw_rate = remap((float)_copter.get_channel_yaw_control_in(),
             -4500.0f, 4500.0f, yaw_rate_min, yaw_rate_max);
-    // Get desired throttle input, between 0 and 1000.
-    const float thrust_in = remap((float)_copter.get_channel_throttle_control_in(),
-            0.0f, 1000.0f, 0.0f, (float)(_throttle_radio_max - _throttle_radio_min));
+    // Get desired altitude in centimeters.
+    const float z_min = 25.0f, z_max = 75.0f;
+    const float desired_z = remap((float)_copter.get_channel_throttle_control_in(),
+            0.0f, 1000.0f, z_min, z_max);
     // Get actual angles in degrees.
     const float actual_roll = _copter.get_roll();
     const float actual_pitch = _copter.get_pitch();
     const float actual_roll_rate = _copter.get_roll_rate();
     const float actual_pitch_rate = _copter.get_pitch_rate();
     const float actual_yaw_rate = _copter.get_yaw_rate();
+    // Get actual ascend speed in centimeter/second.
+    const float actual_z = _copter.get_vicon_z() * 100.0f;
+    const float actual_z_rate = _copter.get_z_rate() * 100.0f;
 
     // Call stabilize pid.
     const float roll_pitch_rate_bound = 250.0f, yaw_rate_bound = 360.0f;
@@ -172,6 +178,9 @@ void AP_MotorsTao::output_armed_stabilizing()
             -roll_pitch_rate_bound, roll_pitch_rate_bound);
     const float desired_pitch_rate = clamp(pid_pitch.get_p(desired_pitch - actual_pitch),
             -roll_pitch_rate_bound, roll_pitch_rate_bound);
+    const float z_rate_bound = 250.0f;
+    const float desired_z_rate = clamp(pid_z.get_p(desired_z - actual_z),
+            -z_rate_bound, z_rate_bound);
 
     // Call rate pid.
     const float pwm_bound = 500.0f;
@@ -181,12 +190,23 @@ void AP_MotorsTao::output_armed_stabilizing()
     const float pitch_pwm = clamp(pid_pitch_rate.get_pid(), -pwm_bound, pwm_bound);
     pid_yaw_rate.set_input_filter_d(desired_yaw_rate - actual_yaw_rate);
     const float yaw_pwm = clamp(pid_yaw_rate.get_pid(), -pwm_bound, pwm_bound);
+    pid_z_rate.set_input_filter_d(desired_z_rate - actual_z_rate);
+    const float z_pwm = clamp(pid_z_rate.get_pid(), -pwm_bound, pwm_bound);
 
     // Send output motor values.
     float motor_out[AP_MOTORS_MAX_NUM_MOTORS];
+    const float takeoff_altitude = 30.0f;
+    // If we are above the takeoff altitude, the throttle will be the middle
+    // throttle plus/minus the adjustment made by z controller, otherwise the throttle
+    // is simply the input from the third channel.
+    const float throttle_input = remap((float)_copter.get_channel_throttle_control_in(),
+            0.0f, 1000.0f, (float)_throttle_radio_min, (float)_throttle_radio_max);
+    const float throttle_radio_mid = (float)(_throttle_radio_min + _throttle_radio_max) / 2.0f;
     for (int i = 0; i < 4; ++i) {
-        motor_out[i] = (float)_throttle_radio_min
-                + _throttle_factor[i] * thrust_in
+        const float throttle =(actual_z > takeoff_altitude
+                ? (throttle_radio_mid + _throttle_factor[i] * z_pwm)
+                : throttle_input);
+        motor_out[i] = throttle
                 + _roll_factor[i] * roll_pwm
                 + _pitch_factor[i] * pitch_pwm
                 + _yaw_factor[i] * yaw_pwm;
