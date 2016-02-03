@@ -1792,21 +1792,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     // taodu@csail.mit.edu
     // Jan 29, 2016
     case MAVLINK_MSG_ID_ATTITUDE: {
-        // Try to get the altitude only. z is in meters and positive up.
-        copter.set_vicon_x_y_z(0.0f, 0.0f, mavlink_msg_attitude_get_yaw(msg));
-        /*
-        // Decode VICON data, all in degree or degree/second.
-        copter.set_vicon_desired_roll_pitch_yaw(
+        // Try to get the actual position. In Holodeck, the x axis is to your
+        // right when you face the computer, z is up, and y forms a right-handed
+        // frame. All measurements are in meters.
+        copter.set_vicon_x_y_z(
                 mavlink_msg_attitude_get_roll(msg),
                 mavlink_msg_attitude_get_pitch(msg),
                 mavlink_msg_attitude_get_yaw(msg)
         );
+        // Angles in degrees. Yaw is zero when the front direction is aligned
+        // with the positive y direction in Holodeck.
         copter.set_vicon_actual_roll_pitch_yaw(
                 mavlink_msg_attitude_get_rollspeed(msg),
                 mavlink_msg_attitude_get_pitchspeed(msg),
                 mavlink_msg_attitude_get_yawspeed(msg)
         );
-        */
         break;
     }
 
