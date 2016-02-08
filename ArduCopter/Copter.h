@@ -212,6 +212,8 @@ class Copter {
         return vicon_z;
     }
 
+    Parameters& get_g() { return g; }
+
 private:
 
     // key aircraft parameters passed to multiple libraries

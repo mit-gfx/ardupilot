@@ -651,6 +651,26 @@
  # define ALT_HOLD_P            1.0f
 #endif
 
+// Tao Du
+// taodu@csail.mit.edu
+// Feb 16, 2016
+// VICON P controller.
+#ifndef VICON_ROLL_P
+ # define VICON_ROLL_P          4.5f
+#endif
+
+#ifndef VICON_PITCH_P
+ # define VICON_PITCH_P         4.5f
+#endif
+
+#ifndef VICON_YAW_P
+ # define VICON_YAW_P           10.0f
+#endif
+
+#ifndef VICON_Z_P
+ # define VICON_Z_P             4.5f
+#endif
+
 // Velocity (vertical) control gains
 #ifndef VEL_Z_P
  # define VEL_Z_P       5.0f
@@ -672,6 +692,90 @@
 #ifndef ACCEL_Z_FILT_HZ
  # define ACCEL_Z_FILT_HZ   20.0f
 #endif
+
+// Tao Du
+// taodu@csail.mit.edu
+// Feb 16, 2016
+#ifndef VICON_POS_TO_ROLL_P
+ # define VICON_POS_TO_ROLL_P       0.1f
+#endif
+#ifndef VICON_POS_TO_ROLL_I
+ # define VICON_POS_TO_ROLL_I       0.0f
+#endif
+#ifndef VICON_POS_TO_ROLL_D
+ # define VICON_POS_TO_ROLL_D       0.1f
+#endif
+#ifndef VICON_POS_TO_ROLL_IMAX
+ # define VICON_POS_TO_ROLL_IMAX    50.0f
+#endif
+
+#ifndef VICON_POS_TO_PITCH_P
+ # define VICON_POS_TO_PITCH_P       0.1f
+#endif
+#ifndef VICON_POS_TO_PITCH_I
+ # define VICON_POS_TO_PITCH_I       0.0f
+#endif
+#ifndef VICON_POS_TO_PITCH_D
+ # define VICON_POS_TO_PITCH_D       0.1f
+#endif
+#ifndef VICON_POS_TO_PITCH_IMAX
+ # define VICON_POS_TO_PITCH_IMAX    50.0f
+#endif
+
+#ifndef VICON_ROLL_RATE_P
+ # define VICON_ROLL_RATE_P       0.7f
+#endif
+#ifndef VICON_ROLL_RATE_I
+ # define VICON_ROLL_RATE_I       1.0f
+#endif
+#ifndef VICON_ROLL_RATE_D
+ # define VICON_ROLL_RATE_D       0.0f
+#endif
+#ifndef VICON_ROLL_RATE_IMAX
+ # define VICON_ROLL_RATE_IMAX    50.0f
+#endif
+
+#ifndef VICON_PITCH_RATE_P
+ # define VICON_PITCH_RATE_P       0.7f
+#endif
+#ifndef VICON_PITCH_RATE_I
+ # define VICON_PITCH_RATE_I       1.0f
+#endif
+#ifndef VICON_PITCH_RATE_D
+ # define VICON_PITCH_RATE_D       0.0f
+#endif
+#ifndef VICON_PITCH_RATE_IMAX
+ # define VICON_PITCH_RATE_IMAX    50.0f
+#endif
+
+#ifndef VICON_YAW_RATE_P
+ # define VICON_YAW_RATE_P       2.7f
+#endif
+#ifndef VICON_YAW_RATE_I
+ # define VICON_YAW_RATE_I       1.0f
+#endif
+#ifndef VICON_YAW_RATE_D
+ # define VICON_YAW_RATE_D       0.0f
+#endif
+#ifndef VICON_YAW_RATE_IMAX
+ # define VICON_YAW_RATE_IMAX    50.0f
+#endif
+
+#ifndef VICON_Z_RATE_P
+ # define VICON_Z_RATE_P       2.7f
+#endif
+#ifndef VICON_Z_RATE_I
+ # define VICON_Z_RATE_I       1.0f
+#endif
+#ifndef VICON_Z_RATE_D
+ # define VICON_Z_RATE_D       0.0f
+#endif
+#ifndef VICON_Z_RATE_IMAX
+ # define VICON_Z_RATE_IMAX    50.0f
+#endif
+
+
+
 
 // default maximum vertical velocity and acceleration the pilot may request
 #ifndef PILOT_VELZ_MAX

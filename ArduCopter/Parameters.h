@@ -55,6 +55,17 @@ public:
         k_param_ins_old,                        // *** Deprecated, remove with next eeprom number change
         k_param_ins,                            // libraries/AP_InertialSensor variables
 
+        // Tao Du
+        // taodu@csail.mit.edu
+        // Feb 16, 2016
+        // VICON pid.
+        k_param_vicon_pos_to_roll = 4,
+        k_param_vicon_pos_to_pitch,
+        k_param_vicon_roll_rate,
+        k_param_vicon_pitch_rate,
+        k_param_vicon_yaw_rate,
+        k_param_vicon_z_rate,   // 9
+
         // simulation
         k_param_sitl = 10,
 
@@ -171,6 +182,15 @@ public:
         //
         k_param_motors = 90,
         k_param_disarm_delay,
+
+        // Tao Du
+        // taodu@csail.mit.edu
+        // Feb 16, 2016
+        // VICON P controller.
+        k_param_vicon_p_roll = 92,
+        k_param_vicon_p_pitch,
+        k_param_vicon_p_yaw,
+        k_param_vicon_p_z,  // 95
 
         //
         // 100: Inertial Nav
@@ -495,6 +515,14 @@ public:
     AC_P                    p_vel_z;
     AC_PID                  pid_accel_z;
 
+    // VICON
+    AC_PID                  vicon_pos_to_roll;
+    AC_PID                  vicon_pos_to_pitch;
+    AC_PID                  vicon_roll_rate;
+    AC_PID                  vicon_pitch_rate;
+    AC_PID                  vicon_yaw_rate;
+    AC_PID                  vicon_z_rate;
+
     AC_P                    p_pos_xy;
     AC_P                    p_stabilize_roll;
     AC_P                    p_stabilize_pitch;
@@ -505,6 +533,12 @@ public:
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
     AP_Float                autotune_min_d;
+
+    // VICON
+    AC_P                    vicon_p_roll;
+    AC_P                    vicon_p_pitch;
+    AC_P                    vicon_p_yaw;
+    AC_P                    vicon_p_z;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -565,6 +599,17 @@ public:
         p_vel_z                 (VEL_Z_P),
         pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
 
+        // Tao Du
+        // taodu@csail.mit.edu
+        // Feb 16, 2016
+        // VICON PID controller.
+        vicon_pos_to_roll   (VICON_POS_TO_ROLL_P,   VICON_POS_TO_ROLL_I,    VICON_POS_TO_ROLL_D,    VICON_POS_TO_ROLL_IMAX, RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS),
+        vicon_pos_to_pitch  (VICON_POS_TO_ROLL_P,   VICON_POS_TO_ROLL_I,    VICON_POS_TO_ROLL_D,    VICON_POS_TO_ROLL_IMAX, RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS),
+        vicon_roll_rate     (VICON_ROLL_RATE_P,     VICON_ROLL_RATE_I,      VICON_ROLL_RATE_D,      VICON_ROLL_RATE_IMAX,   RATE_ROLL_FILT_HZ,  MAIN_LOOP_SECONDS),
+        vicon_pitch_rate    (VICON_PITCH_RATE_P,    VICON_PITCH_RATE_I,     VICON_PITCH_RATE_D,     VICON_PITCH_RATE_IMAX,  RATE_PITCH_FILT_HZ, MAIN_LOOP_SECONDS),
+        vicon_yaw_rate      (VICON_YAW_RATE_P,      VICON_YAW_RATE_I,       VICON_YAW_RATE_D,       VICON_YAW_RATE_IMAX,    RATE_YAW_FILT_HZ,   MAIN_LOOP_SECONDS),
+        vicon_z_rate        (VICON_Z_RATE_P,        VICON_Z_RATE_I,         VICON_Z_RATE_D,         VICON_Z_RATE_IMAX,      ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
+
         // P controller	        initial P
         //----------------------------------------------------------------------
         p_pos_xy                (POS_XY_P),
@@ -573,7 +618,16 @@ public:
         p_stabilize_pitch       (STABILIZE_PITCH_P),
         p_stabilize_yaw         (STABILIZE_YAW_P),
 
-        p_alt_hold              (ALT_HOLD_P)
+        p_alt_hold              (ALT_HOLD_P),
+
+        // Tao Du
+        // taodu@csail.mit.edu
+        // Feb 16, 2016
+        // VICON P controller.
+        vicon_p_roll            (VICON_ROLL_P),
+        vicon_p_pitch           (VICON_PITCH_P),
+        vicon_p_yaw             (VICON_YAW_P),
+        vicon_p_z               (VICON_Z_P)
     {
     }
 };

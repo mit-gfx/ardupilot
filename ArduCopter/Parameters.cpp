@@ -638,6 +638,221 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 
     // PID controller
     //---------------
+    // @Param: VCN_PRLL_P
+    // @DisplayName: Vicon position to roll controller P gain
+    // @Description: Vicon position to roll controller P gain
+    // @Range: 0.01 1.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_PRLL_I
+    // @DisplayName: Vicon position to roll controller I gain
+    // @Description: Vicon position to roll controller I gain
+    // @Range: 0.01 1.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_PRLL_IMAX
+    // @DisplayName: Vicon position to roll controller I gain maximum
+    // @Description: Vicon position to roll controller I gain maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: VCN_PRLL_D
+    // @DisplayName: Vicon position to roll controller D gain
+    // @Description: Vicon position to roll controller D gain
+    // @Range: 0.001 1.0
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VCN_PRLL_FILT_HZ
+    // @DisplayName: Vicon position to roll controller filter
+    // @Description: Vicon position to roll controller
+    // @Range: 1.000 100.000
+    // @Units: Hz
+    // @User: Standard
+    GGROUP(vicon_pos_to_roll,     "VCN_PRLL_", AC_PID),
+
+    // @Param: VCN_PPIT_P
+    // @DisplayName: Vicon position to pitch controller P gain
+    // @Description: Vicon position to pitch controller P gain
+    // @Range: 0.01 1.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_PPIT_I
+    // @DisplayName: Vicon position to pitch controller I gain
+    // @Description: Vicon position to pitch controller I gain
+    // @Range: 0.01 1.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_PPIT_IMAX
+    // @DisplayName: Vicon position to pitch controller I gain maximum
+    // @Description: Vicon position to pitch controller I gain maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: VCN_PPIT_D
+    // @DisplayName: Vicon position to pitch controller D gain
+    // @Description: Vicon position to pitch controller D gain
+    // @Range: 0.001 1.0
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VCN_PPIT_FILT_HZ
+    // @DisplayName: Vicon position to pitch controller filter
+    // @Description: Vicon position to pitch controller
+    // @Range: 1.000 100.000
+    // @Units: Hz
+    // @User: Standard
+    GGROUP(vicon_pos_to_pitch,     "VCN_PPIT_", AC_PID),
+
+    // @Param: VCN_RRTE_P
+    // @DisplayName: Vicon roll rate controller P gain
+    // @Description: Vicon roll rate controller P gain
+    // @Range: 0.01 10.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_RRTE_I
+    // @DisplayName: Vicon roll rate controller I gain
+    // @Description: Vicon roll rate controller I gain
+    // @Range: 0.01 10.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_RRTE_IMAX
+    // @DisplayName: Vicon roll rate controller I gain maximum
+    // @Description: Vicon roll rate controller I gain maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: VCN_RRTE_D
+    // @DisplayName: Vicon roll rate controller D gain
+    // @Description: Vicon roll rate controller D gain
+    // @Range: 0.001 1.0
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VCN_RRTE_FILT_HZ
+    // @DisplayName: Vicon roll rate controller filter
+    // @Description: Vicon roll rate controller
+    // @Range: 1.000 100.000
+    // @Units: Hz
+    // @User: Standard
+    GGROUP(vicon_roll_rate,     "VCN_RRTE_", AC_PID),
+
+    // @Param: VCN_PRTE_P
+    // @DisplayName: Vicon pitch rate controller P gain
+    // @Description: Vicon pitch rate controller P gain
+    // @Range: 0.01 10.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_PRTE_I
+    // @DisplayName: Vicon pitch rate controller I gain
+    // @Description: Vicon pitch rate controller I gain
+    // @Range: 0.01 10.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_PRTE_IMAX
+    // @DisplayName: Vicon pitch rate controller I gain maximum
+    // @Description: Vicon pitch rate controller I gain maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: VCN_PRTE_D
+    // @DisplayName: Vicon pitch rate controller D gain
+    // @Description: Vicon pitch rate controller D gain
+    // @Range: 0.001 1.0
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VCN_PRTE_FILT_HZ
+    // @DisplayName: Vicon pitch rate controller filter
+    // @Description: Vicon pitch rate controller
+    // @Range: 1.000 100.000
+    // @Units: Hz
+    // @User: Standard
+    GGROUP(vicon_pitch_rate,     "VCN_PRTE_", AC_PID),
+
+    // @Param: VCN_YRTE_P
+    // @DisplayName: Vicon yaw rate controller P gain
+    // @Description: Vicon yaw rate controller P gain
+    // @Range: 0.01 10.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_YRTE_I
+    // @DisplayName: Vicon yaw rate controller I gain
+    // @Description: Vicon yaw rate controller I gain
+    // @Range: 0.01 10.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_YRTE_IMAX
+    // @DisplayName: Vicon yaw rate controller I gain maximum
+    // @Description: Vicon yaw rate controller I gain maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: VCN_YRTE_D
+    // @DisplayName: Vicon yaw rate controller D gain
+    // @Description: Vicon yaw rate controller D gain
+    // @Range: 0.001 1.0
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VCN_YRTE_FILT_HZ
+    // @DisplayName: Vicon yaw rate controller filter
+    // @Description: Vicon yaw rate controller
+    // @Range: 1.000 100.000
+    // @Units: Hz
+    // @User: Standard
+    GGROUP(vicon_yaw_rate,     "VCN_YRTE_", AC_PID),
+
+    // @Param: VCN_ZRTE_P
+    // @DisplayName: Vicon z rate controller P gain
+    // @Description: Vicon z rate controller P gain
+    // @Range: 0.01 10.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_ZRTE_I
+    // @DisplayName: Vicon z rate controller I gain
+    // @Description: Vicon z rate controller I gain
+    // @Range: 0.01 10.0
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VCN_ZRTE_IMAX
+    // @DisplayName: Vicon z rate controller I gain maximum
+    // @Description: Vicon z rate controller I gain maximum
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: VCN_ZRTE_D
+    // @DisplayName: Vicon z rate controller D gain
+    // @Description: Vicon z rate controller D gain
+    // @Range: 0.001 1.0
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VCN_ZRTE_FILT_HZ
+    // @DisplayName: Vicon z rate controller filter
+    // @Description: Vicon z rate controller
+    // @Range: 1.000 100.000
+    // @Units: Hz
+    // @User: Standard
+    GGROUP(vicon_z_rate,     "VCN_ZRTE_", AC_PID),
 
     // @Param: RATE_RLL_P
     // @DisplayName: Roll axis rate controller P gain
@@ -806,6 +1021,33 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 
     // P controllers
     //--------------
+    // @Param: VCN_RLL_P
+    // @DisplayName: Vicon roll controller P gain
+    // @Description: Vicon roll controller P gain
+    // @Range: 0.000 10.000
+    // @User: Standard
+    GGROUP(vicon_p_roll,       "VCN_RLL_", AC_P),
+    // @Param: VCN_PIT_P
+    // @DisplayName: Vicon pitch controller P gain
+    // @Description: Vicon pitch controller P gain
+    // @Range: 0.000 10.000
+    // @User: Standard
+    GGROUP(vicon_p_pitch,       "VCN_PIT_", AC_P),
+
+    // @Param: VCN_YAW_P
+    // @DisplayName: Vicon yaw controller P gain
+    // @Description: Vicon yaw controller P gain
+    // @Range: 0.000 10.000
+    // @User: Standard
+    GGROUP(vicon_p_yaw,       "VCN_YAW_", AC_P),
+
+    // @Param: VCN_Z_P
+    // @DisplayName: Vicon z controller P gain
+    // @Description: Vicon z controller P gain
+    // @Range: 0.000 10.000
+    // @User: Standard
+    GGROUP(vicon_p_z,       "VCN_Z_", AC_P),
+
     // @Param: STB_RLL_P
     // @DisplayName: Roll axis stabilize controller P gain
     // @Description: Roll axis stabilize (i.e. angle) controller P gain.  Converts the error between the desired roll angle and actual angle to a desired roll rate
