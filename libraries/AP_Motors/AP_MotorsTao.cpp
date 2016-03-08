@@ -71,22 +71,11 @@ void AP_MotorsTao::output_armed_not_stabilizing() {
 }
 
 void AP_MotorsTao::output_armed_stabilizing() {
-    // A simple safety switch.
-    // throttle \in (0.0f, 1000.0f).
-    const float throttle = (float)_copter.get_channel_throttle_control_in();
-    if (throttle < 500.0f) {
-        for (int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-            if (motor_enabled[i]) {
-                hal.rcout->write(i, _throttle_radio_min);
-            }
-        }
-    } else {
-        for(int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-            if(motor_enabled[i]) {
-                const float motor_output = clamp(_copter.get_mavlink_motor_output(i),
-                        (float)_throttle_radio_min, (float)_throttle_radio_max);
-                hal.rcout->write(i, (uint16_t)motor_output);
-            }
+    for(int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
+        if(motor_enabled[i]) {
+            const float motor_output = clamp(_copter.get_mavlink_motor_output(i),
+                    (float)_throttle_radio_min, (float)_throttle_radio_max);
+            hal.rcout->write(i, (uint16_t)motor_output);
         }
     }
 }
