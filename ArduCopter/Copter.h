@@ -142,38 +142,63 @@ class Copter {
         return channel_yaw->control_in;
     }
 
+    // Return the linear velocity in meter/second.
+    // We use North-East-Down coordinates.
+    // Positive means north.
+    float get_latitude_rate() const {
+        const Vector3f& v = inertial_nav.get_velocity();
+        return v.x / 100.0f;
+    }
+    // Positive means east.
+    float get_longitude_rate() const {
+        const Vector3f& v = inertial_nav.get_velocity();
+        return v.y / 100.0f;
+    }
+    // For z positive means going down.
+    float get_z_rate() const {
+        return -inertial_nav.get_velocity_z() / 100.0f;
+    }
+
+    // All angles and angular rates are in radians.
     float get_roll() const {
-        return ToDeg(ahrs.roll);
+        return ahrs.roll;
     }
     float get_pitch() const {
-        return ToDeg(ahrs.pitch);
+        return ahrs.pitch;
     }
     float get_yaw() const {
-        return ToDeg(ahrs.yaw);
+        return ahrs.yaw;
     }
     float get_roll_rate() const {
-        return ToDeg(ahrs.get_gyro().x);
+        return ahrs.get_gyro().x;
     }
     float get_pitch_rate() const {
-        return ToDeg(ahrs.get_gyro().y);
+        return ahrs.get_gyro().y;
     }
     float get_yaw_rate() const {
-        return ToDeg(ahrs.get_gyro().z);
+        return ahrs.get_gyro().z;
     }
 
     // Tao Du
     // taodu@csail.mit.edu
-    // Mar 2, 2016
+    // Mar 16, 2016
     // Set mavlink output.
-    void set_mavlink_motor_output(const float value, const int index) {
-        if (index >= 0 && index < 6) {
-            mavlink_motor_output[index] = value;
-        }
+    void set_vicon_xyz(const float x, const float y, const float z) {
+        vicon_x = x;
+        vicon_y = y;
+        vicon_z = z;
     }
-    float get_mavlink_motor_output(const int index) const {
-        if (index < 0 || index >= 6) return 0.0f;
-        return mavlink_motor_output[index];
+    void set_vicon_rpy(const float roll, const float pitch, const float yaw) {
+        vicon_roll = roll;
+        vicon_pitch = pitch;
+        vicon_yaw = yaw;
     }
+    float get_vicon_x() const { return vicon_x; }
+    float get_vicon_y() const { return vicon_y; }
+    float get_vicon_z() const { return vicon_z; }
+    float get_vicon_roll() const { return vicon_roll; }
+    float get_vicon_pitch() const { return vicon_pitch; }
+    float get_vicon_yaw() const { return vicon_yaw; }
 
 private:
 
@@ -563,8 +588,9 @@ private:
 
     // Tao Du
     // taodu@csail.mit.edu
-    // Mar 2, 2016
-    float mavlink_motor_output[6];
+    // Mar 16, 2016
+    float vicon_x, vicon_y, vicon_z;
+    float vicon_roll, vicon_pitch, vicon_yaw;
 
 #if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,

@@ -138,10 +138,9 @@ Copter::Copter(void) :
 
     // Tao Du
     // taodu@csail.mit.edu
-    // Mar 2, 2016
-    for (int i = 0; i < 6; ++i) {
-        mavlink_motor_output[i] = 0.0f;
-    }
+    // Mar 16, 2016.
+    vicon_x = vicon_y = vicon_z = 0.0f;
+    vicon_roll = vicon_pitch = vicon_yaw = 0.0f;
 }
 
 Copter copter;

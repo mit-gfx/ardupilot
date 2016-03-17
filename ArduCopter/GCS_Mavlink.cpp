@@ -1790,23 +1790,23 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     // Tao Du
     // taodu@csail.mit.edu
-    // Mar 2, 2016
+    // Mar 16, 2016
     case MAVLINK_MSG_ID_ATTITUDE: {
         // Unfortunately we abuse the usage of this message. Will consider
         // implementing a new mavlink message if I have time...
         // Mapping:
-        // roll -> motor 0
-        // pitch -> motor 1
-        // yaw -> motor 2
-        // rollspeed -> motor 3
-        // pitchspeed -> motor 4
-        // yawspeed -> motor 5
-        copter.set_mavlink_motor_output(mavlink_msg_attitude_get_roll(msg), 0);
-        copter.set_mavlink_motor_output(mavlink_msg_attitude_get_pitch(msg), 1);
-        copter.set_mavlink_motor_output(mavlink_msg_attitude_get_yaw(msg), 2);
-        copter.set_mavlink_motor_output(mavlink_msg_attitude_get_rollspeed(msg), 3);
-        copter.set_mavlink_motor_output(mavlink_msg_attitude_get_pitchspeed(msg), 4);
-        copter.set_mavlink_motor_output(mavlink_msg_attitude_get_yawspeed(msg), 5);
+        // roll -> x
+        // pitch -> y
+        // yaw -> z
+        // rollspeed -> roll
+        // pitchspeed -> pitch
+        // yawspeed -> yaw
+        copter.set_vicon_xyz(mavlink_msg_attitude_get_roll(msg),
+                             mavlink_msg_attitude_get_pitch(msg),
+                             mavlink_msg_attitude_get_yaw(msg));
+        copter.set_vicon_rpy(mavlink_msg_attitude_get_rollspeed(msg),
+                             mavlink_msg_attitude_get_pitchspeed(msg),
+                             mavlink_msg_attitude_get_yawspeed(msg));
         break;
     }
 
