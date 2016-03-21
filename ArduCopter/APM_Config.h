@@ -53,3 +53,9 @@
 //#define USERHOOK_MEDIUMLOOP userhook_MediumLoop();        // for code to be run at 10hz
 //#define USERHOOK_SLOWLOOP userhook_SlowLoop();            // for code to be run at 3.3hz
 //#define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();  // for code to be run at 1hz
+
+// Tao Du
+// taodu@csail.mit.edu
+// Mar 18, 2016
+// Fake GPS data with VICON.
+#define GPS_PROTOCOL    GPS_VICON

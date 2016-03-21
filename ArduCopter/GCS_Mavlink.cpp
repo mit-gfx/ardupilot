@@ -1797,6 +1797,50 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         AP_Notify::handle_led_control(msg);
         break;
 
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 18, 2016
+#if GPS_PROTOCOL == GPS_VICON
+    case MAVLINK_MSG_ID_VISION_POSITION_ESTIMATE: {
+        mavlink_vision_position_estimate_t packet;
+        mavlink_msg_vision_position_estimate_decode(msg, &packet);
+
+        // The definition of fields in packet:
+        // uint64_t usec; // Timestamp (microseconds, synced to UNIX time or since system boot)
+        // float x; // X in meters.
+        // float y; // Y in meters.
+        // float z; // Z in meters. Positive means going down.
+        // float roll; // Roll angle in rad
+        // float pitch; // Pitch angle in rad
+        // float yaw; // Yaw angle in rad
+
+        // Convert x, y, z to latitude, longitude and altitude.
+        const double latitude = packet.x / LATLON_TO_M;
+        const double longitude = packet.y / LATLON_TO_M;
+        const float altitude = -packet.z;   // In meters.
+
+        // Fake the location.
+        Location loc;
+        loc.lat = int32_t(latitude);
+        loc.lng = int32_t(longitude);
+        // Altitude in centimeters.
+        loc.alt = int32_t(altitude * 100.0f);
+
+        // Fake the velocity.
+        Vector3f vel(0.0f, 0.0f, 0.0f);
+
+        // Fake GPS.
+        const uint8_t num_sats = 10u;
+        copter.gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
+                   copter.millis(),
+                   loc, vel, num_sats, 0, false);
+
+        // Fake compass. Needs angles in radians.
+        copter.compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
+        break;
+    }
+#endif
+
     }     // end switch
 } // end handle mavlink
 

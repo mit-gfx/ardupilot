@@ -102,6 +102,15 @@ public:
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
 
+        // Tao Du
+        // taodu@csail.mit.edu
+        // Mar 21, 2016
+        // Set some flag values to be false if we are using VICON.
+#if GPS_PROTOCOL == GPS_VICON
+        _flags.fly_forward = false;
+        _flags.wind_estimation = false;
+#endif
+
         // initialise _home
         _home.options    = 0;
         _home.alt        = 0;

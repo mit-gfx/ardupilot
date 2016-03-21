@@ -462,6 +462,17 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     uint64_t gps_time_ms = time_epoch_ms - (17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL);
     istate.time_week     = gps_time_ms / (86400*7*(uint64_t)1000);
     istate.time_week_ms  = gps_time_ms - istate.time_week*(86400*7*(uint64_t)1000);
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 21, 2016
+    // Set all speed accuracy to be false if we are using VICON.
+#if GPS_PROTOCOL == GPS_VICON
+    istate.have_speed_accuracy = false;
+    istate.have_horizontal_accuracy = false;
+    istate.have_vertical_accuracy = false;
+#endif
+
     timing[instance].last_message_time_ms = tnow;
     timing[instance].last_fix_time_ms = tnow;
     _type[instance].set(GPS_TYPE_HIL);

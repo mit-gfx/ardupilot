@@ -280,11 +280,19 @@ Compass::Compass(void) :
     _thr_or_curr(0.0f),
     _hil_mode(false)
 {
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 18, 2016
+    // Set hil mode to be true if we are using VICON.
+#if GPS_PROTOCOL == GPS_VICON
+    _hil_mode = true;
+#endif
+
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         _backends[i] = NULL;
         _state[i].last_update_usec = 0;
-    }    
+    }
 
 #if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids
@@ -308,6 +316,19 @@ Compass::init()
         hal.scheduler->delay(100);
         read();
     }
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 20, 2016
+    // Set offsets, declination and motor compensation to
+    // be zero if we are using VICON.
+#if GPS_PROTOCOL == GPS_VICON
+    set_and_save_offsets(0,0,0,0);
+    set_declination(0.0f);
+    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+        set_motor_compensation(i, Vector3f(0.0f, 0.0f, 0.0f));
+    }
+#endif
     return true;
 }
 
@@ -385,7 +406,15 @@ Compass::read(void)
         _backends[i]->read();
     }    
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
+        // Tao Du
+        // taodu@csail.mit.edu
+        // Mar 19, 2016
+        // The compass is always healthy if we are using VICON.
+#if GPS_PROTOCOL == GPS_VICON
+        _state[i].healthy = true;
+#else
         _state[i].healthy = (hal.scheduler->millis() - _state[i].last_update_ms < 500);
+#endif
     }
     return healthy();
 }
@@ -395,7 +424,15 @@ Compass::set_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
+        // Tao Du
+        // taodu@csail.mit.edu
+        // Mar 20, 2016
+        // Set offsets to be zero if we are using VICON.
+#if GPS_PROTOCOL == GPS_VICON
+        _state[i].offset.set(Vector3f(0.0f, 0.0f, 0.0f));
+#else
         _state[i].offset.set(offsets);
+#endif
     }
 }
 
@@ -429,7 +466,15 @@ Compass::save_offsets(void)
 void
 Compass::set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor)
 {
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 20, 2016
+    // Do not allow using motor compensation if we are using VICON.
+#if GPS_PROTOCOL == GPS_VICON
+    _state[i].motor_compensation.set(Vector3f(0.0f, 0.0f, 0.0f));
+#else
     _state[i].motor_compensation.set(motor_comp_factor);
+#endif
 }
 
 void
@@ -444,6 +489,13 @@ Compass::save_motor_compensation()
 void
 Compass::set_initial_location(int32_t latitude, int32_t longitude)
 {
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 20, 2016
+    // If using VICON set declination to be zero.
+#if GPS_PROTOCOL == GPS_VICON
+    _declination.set(0.0f);
+#else
     // if automatic declination is configured, then compute
     // the declination based on the initial GPS fix
     if (_auto_declination) {
@@ -453,6 +505,7 @@ Compass::set_initial_location(int32_t latitude, int32_t longitude)
                     (float)latitude / 10000000,
                     (float)longitude / 10000000)));
     }
+#endif
 }
 
 /// return true if the compass should be used for yaw calculations
@@ -473,6 +526,12 @@ Compass::use_for_yaw(uint8_t i) const
 void
 Compass::set_declination(float radians, bool save_to_eeprom)
 {
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Set declination to be zero if we are using VICON.
+#if GPS_PROTOCOL == GPS_VICON
+    radians = 0.0f;
+#endif
     if (save_to_eeprom) {
         _declination.set_and_save(radians);
     }else{
@@ -525,6 +584,14 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix) const
 ///
 bool Compass::configured(uint8_t i)
 {
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 20, 2016
+    // Return true if we are using VICON
+#if GPS_PROTOCOL == GPS_VICON
+    return true;
+#endif
+
     // exit immediately if instance is beyond the number of compasses we have available
     if (i > get_count()) {
         return false;
@@ -615,6 +682,14 @@ void Compass::_setup_earth_field(void)
 {
     // assume a earth field strength of 400
     _hil.Bearth(400, 0, 0);
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 20, 2016
+    // Don't do anything else if we are using VICON
+#if GPS_PROTOCOL == GPS_VICON
+    return;
+#endif
     
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
