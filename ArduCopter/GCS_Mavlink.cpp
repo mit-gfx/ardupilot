@@ -1826,14 +1826,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // Altitude in centimeters.
         loc.alt = int32_t(altitude * 100.0f);
 
+        // Feed in the new North-East-Down data to get the velocity.
+        uint32_t timestamp = copter.millis();
+        copter.update_vicon_gps_ned_velocity(Vector3f(packet.x, packet.y, packet.z),
+                timestamp);
+
         // Fake the velocity.
-        Vector3f vel(0.0f, 0.0f, 0.0f);
+        const Vector3f vel = copter.get_vicon_gps_ned_velocity();
 
         // Fake GPS.
         const uint8_t num_sats = 10u;
         copter.gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-                   copter.millis(),
-                   loc, vel, num_sats, 0, false);
+                   timestamp,
+                   loc, vel, num_sats, 0, true);
 
         // Fake compass. Needs angles in radians.
         copter.compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);

@@ -126,6 +126,27 @@ class Copter {
     void setup();
     void loop();
 
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 21, 2016
+    // Compute linear velocity from vicon gps data.
+#if GPS_PROTOCOL == GPS_VICON
+    // Return North-East-Down velocity in meter/second.
+    Vector3f get_vicon_gps_ned_velocity(void) {
+        return Vector3f(vicon_gps_vx.slope() * 1.0e3f,
+                vicon_gps_vy.slope() * 1.0e3f,
+                vicon_gps_vz.slope() * 1.0e3f);
+    }
+
+    // sample is in meters and timestamp is in millisecond.
+    void update_vicon_gps_ned_velocity(const Vector3f& sample, uint32_t timestamp) {
+        vicon_gps_vx.update(sample.x, timestamp);
+        vicon_gps_vy.update(sample.y, timestamp);
+        vicon_gps_vz.update(sample.z, timestamp);
+    }
+
+#endif
+
 private:
 
     // key aircraft parameters passed to multiple libraries
@@ -509,6 +530,15 @@ private:
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 20, 2016
+    // Derivative filters for computing the linear velocity
+    // from VICON gps data.
+#if GPS_PROTOCOL == GPS_VICON
+    DerivativeFilterFloat_Size7 vicon_gps_vx, vicon_gps_vy, vicon_gps_vz;
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
