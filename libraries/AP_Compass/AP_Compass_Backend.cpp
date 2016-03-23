@@ -31,7 +31,13 @@ void AP_Compass_Backend::publish_field(const Vector3f &mag, uint8_t instance)
         state.field.rotate((enum Rotation)state.orientation.get());
     }
 
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 20, 2016
+    // Do not call apply_correction if we are using VICON.
+#if GPS_PROTOCOL != GPS_VICON
     apply_corrections(state.field, instance);
+#endif
 
     state.last_update_ms = hal.scheduler->millis();
     state.last_update_usec = hal.scheduler->micros();
@@ -59,6 +65,14 @@ void AP_Compass_Backend::apply_corrections(Vector3f &mag, uint8_t i)
       note that _motor_offset[] is kept even if compensation is not
       being applied so it can be logged correctly
      */
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 20, 2016
+    // Set motor_offset to be zero if we are using vicon.
+#if GPS_PROTOCOL == GPS_VICON
+    state.motor_offset.zero();
+    return;
+#endif
     mag += offsets;
     if(_compass._motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && !is_zero(_compass._thr_or_curr)) {
         state.motor_offset = mot * _compass._thr_or_curr;

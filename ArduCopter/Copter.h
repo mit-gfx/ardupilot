@@ -128,7 +128,9 @@ class Copter {
 
     // Tao Du
     // taodu@csail.mit.edu
-    // Jan 29, 2016
+    // Mar 21, 2016
+    // Compute linear velocity from vicon gps data.
+#if GPS_PROTOCOL == GPS_VICON
     int16_t get_channel_roll_control_in() const {
         return channel_roll->control_in;
     }
@@ -141,24 +143,6 @@ class Copter {
     int16_t get_channel_yaw_control_in() const {
         return channel_yaw->control_in;
     }
-
-    // Return the linear velocity in meter/second.
-    // We use North-East-Down coordinates.
-    // Positive means north.
-    float get_latitude_rate() const {
-        const Vector3f& v = inertial_nav.get_velocity();
-        return v.x / 100.0f;
-    }
-    // Positive means east.
-    float get_longitude_rate() const {
-        const Vector3f& v = inertial_nav.get_velocity();
-        return v.y / 100.0f;
-    }
-    // For z positive means going down.
-    float get_z_rate() const {
-        return -inertial_nav.get_velocity_z() / 100.0f;
-    }
-
     // All angles and angular rates are in radians.
     float get_roll() const {
         return ahrs.roll;
@@ -178,27 +162,31 @@ class Copter {
     float get_yaw_rate() const {
         return ahrs.get_gyro().z;
     }
+    // All vicon positions are in north east down coordinates.
+    void set_vicon_position(const Vector3f& p) {
+        vicon_position = p;
+    }
 
-    // Tao Du
-    // taodu@csail.mit.edu
-    // Mar 16, 2016
-    // Set mavlink output.
-    void set_vicon_xyz(const float x, const float y, const float z) {
-        vicon_x = x;
-        vicon_y = y;
-        vicon_z = z;
+    const Vector3f& get_vicon_position() const {
+        return vicon_position;
     }
-    void set_vicon_rpy(const float roll, const float pitch, const float yaw) {
-        vicon_roll = roll;
-        vicon_pitch = pitch;
-        vicon_yaw = yaw;
+
+    // Vicon attitude angles are in radians.
+    void set_vicon_attitude(const Vector3f& a) {
+        vicon_attitude = a;
     }
-    float get_vicon_x() const { return vicon_x; }
-    float get_vicon_y() const { return vicon_y; }
-    float get_vicon_z() const { return vicon_z; }
-    float get_vicon_roll() const { return vicon_roll; }
-    float get_vicon_pitch() const { return vicon_pitch; }
-    float get_vicon_yaw() const { return vicon_yaw; }
+
+    const Vector3f& get_vicon_attitude() const {
+        return vicon_attitude;
+    }
+
+    // Return north-east-down velocity in meter/second.
+    const Vector3f get_ned_velocity() const {
+        const Vector3f& velocity_neu = inertial_nav.get_velocity() / 100.0f;
+        // Convert neu to ned.
+        return Vector3f(velocity_neu.x, velocity_neu.y, -velocity_neu.z);
+    }
+#endif
 
 private:
 
@@ -588,9 +576,12 @@ private:
 
     // Tao Du
     // taodu@csail.mit.edu
-    // Mar 16, 2016
-    float vicon_x, vicon_y, vicon_z;
-    float vicon_roll, vicon_pitch, vicon_yaw;
+    // Mar 20, 2016
+    // from VICON gps data.
+#if GPS_PROTOCOL == GPS_VICON
+    Vector3f vicon_position;
+    Vector3f vicon_attitude;
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,

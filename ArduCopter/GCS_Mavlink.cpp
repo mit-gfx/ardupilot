@@ -1788,28 +1788,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     }
 #endif // AC_RALLY == ENABLED
 
-    // Tao Du
-    // taodu@csail.mit.edu
-    // Mar 16, 2016
-    case MAVLINK_MSG_ID_ATTITUDE: {
-        // Unfortunately we abuse the usage of this message. Will consider
-        // implementing a new mavlink message if I have time...
-        // Mapping:
-        // roll -> x
-        // pitch -> y
-        // yaw -> z
-        // rollspeed -> roll
-        // pitchspeed -> pitch
-        // yawspeed -> yaw
-        copter.set_vicon_xyz(mavlink_msg_attitude_get_roll(msg),
-                             mavlink_msg_attitude_get_pitch(msg),
-                             mavlink_msg_attitude_get_yaw(msg));
-        copter.set_vicon_rpy(mavlink_msg_attitude_get_rollspeed(msg),
-                             mavlink_msg_attitude_get_pitchspeed(msg),
-                             mavlink_msg_attitude_get_yawspeed(msg));
-        break;
-    }
-
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
         break;
@@ -1818,6 +1796,35 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // send message to Notify
         AP_Notify::handle_led_control(msg);
         break;
+
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 18, 2016
+#if GPS_PROTOCOL == GPS_VICON
+    case MAVLINK_MSG_ID_VISION_POSITION_ESTIMATE: {
+        mavlink_vision_position_estimate_t packet;
+        mavlink_msg_vision_position_estimate_decode(msg, &packet);
+
+        // The definition of fields in packet:
+        // uint64_t usec; // Timestamp (microseconds, synced to UNIX time or since system boot)
+        // float x; // X in meters.
+        // float y; // Y in meters.
+        // float z; // Z in meters. Positive means going down.
+        // float roll; // Roll angle in rad
+        // float pitch; // Pitch angle in rad
+        // float yaw; // Yaw angle in rad
+
+        // Fake the position.
+        copter.set_vicon_position(Vector3f(packet.x, packet.y, packet.z));
+
+        // Store the vicon attitude.
+        copter.set_vicon_attitude(Vector3f(packet.roll, packet.pitch, packet.yaw));
+
+        // Fake compass. Needs angles in radians.
+        copter.compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
+        break;
+    }
+#endif
 
     }     // end switch
 } // end handle mavlink
