@@ -4,7 +4,7 @@
  *
  *       AHRS system using DCM matrices
  *
- *       Based on DCM code by Doug Weibel, Jordi Muñoz and Jose Julio. DIYDrones.com
+ *       Based on DCM code by Doug Weibel, Jordi Muï¿½oz and Jose Julio. DIYDrones.com
  *
  *       Adapted for the general ArduPilot AHRS interface by Andrew Tridgell
 
@@ -246,7 +246,7 @@ AP_AHRS_DCM::renorm(Vector3f const &a, Vector3f &result)
  *  to approximations rather than identities. In effect, the axes in the two frames of reference no
  *  longer describe a rigid body. Fortunately, numerical error accumulates very slowly, so it is a
  *  simple matter to stay ahead of it.
- *  We call the process of enforcing the orthogonality conditions ÒrenormalizationÓ.
+ *  We call the process of enforcing the orthogonality conditions ï¿½renormalizationï¿½.
  */
 void
 AP_AHRS_DCM::normalize(void)
@@ -362,6 +362,16 @@ bool AP_AHRS_DCM::use_fast_gains(void) const
 // return true if we should use the compass for yaw correction
 bool AP_AHRS_DCM::use_compass(void)
 {
+    // Tao Du
+    // taodu@csail.mit.edu
+    // Mar 23, 2016
+    // Make sure compass yaw is used when we are using VICON.
+    // This is probably unnecessary but let's just do it to make sure
+    // it is used in yaw calculation.
+#if GPS_PROTOCOL == GPS_VICON
+    return true;
+#endif
+
     if (!_compass || !_compass->use_for_yaw()) {
         // no compass available
         return false;

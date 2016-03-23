@@ -280,19 +280,21 @@ Compass::Compass(void) :
     _thr_or_curr(0.0f),
     _hil_mode(false)
 {
+    AP_Param::setup_object_defaults(this, var_info);
+    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+        _backends[i] = NULL;
+        _state[i].last_update_usec = 0;
+    }
+
     // Tao Du
     // taodu@csail.mit.edu
     // Mar 18, 2016
     // Set hil mode to be true if we are using VICON.
 #if GPS_PROTOCOL == GPS_VICON
     _hil_mode = true;
+    // Make sure the HIL compass is used for yaw.
+    _state[0].use_for_yaw = true;
 #endif
-
-    AP_Param::setup_object_defaults(this, var_info);
-    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
-        _backends[i] = NULL;
-        _state[i].last_update_usec = 0;
-    }
 
 #if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids
