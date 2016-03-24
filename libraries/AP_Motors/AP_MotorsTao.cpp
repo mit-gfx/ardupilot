@@ -28,6 +28,9 @@
 // taodu@csail.mit.edu
 // Mar 22, 2016
 
+static AC_PID vicon_vx(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
+static AC_PID vicon_vy(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
+
 // Tao Du
 // taodu@csail.mit.edu
 // Mar 22, 2016
@@ -41,10 +44,10 @@
 #if COPTER_NAME == QUAD_ROTOR
  #define MAX_ROTOR_IN_COPTER 4
 const float K[MAX_ROTOR_IN_COPTER][12] = {
-    {-0.5000f,   -0.5000f,   -0.5000f,   -2.8686f,    2.8686f,    0.5000f,   -0.7367f,   -0.7367f,   -0.7246f,   -0.5601f,    0.5601f,    0.7487f},
-    { 0.5000f,    0.5000f,   -0.5000f,    2.8686f,   -2.8686f,    0.5000f,    0.7367f,    0.7367f,   -0.7246f,    0.5601f,   -0.5601f,    0.7487f},
-    {-0.5000f,    0.5000f,   -0.5000f,    2.8686f,    2.8686f,   -0.5000f,   -0.7367f,    0.7367f,   -0.7246f,    0.5601f,    0.5601f,   -0.7487f},
-    { 0.5000f,   -0.5000f,   -0.5000f,   -2.8686f,   -2.8686f,   -0.5000f,    0.7367f,   -0.7367f,   -0.7246f,   -0.5601f,   -0.5601f,   -0.7487f}
+    {-0.8660f,  -0.8660f,   -0.8660f,   -4.8564f,   4.8564f,    0.8660f,    -1.2682f,   -1.2682f,   -1.0877f,   -0.9262f,   0.9262f,    1.1349f},
+    {0.8660f,   0.8660f,    -0.8660f,   4.8564f,    -4.8564f,   0.8660f,    1.2682f,    1.2682f,    -1.0877f,   0.9262f,    -0.9262f,   1.1349f},
+    {-0.8660f,  0.8660f,    -0.8660f,   4.8564f,    4.8564f,    -0.8660f,   -1.2682f,   1.2682f,    -1.0877f,   0.9262f,    0.9262f,    -1.1349f},
+    {0.8660f,   -0.8660f,   -0.8660f,   -4.8564f,   -4.8564f,   -0.8660f,   1.2682f,    -1.2682f,   -1.0877f,   -0.9262f,   -0.9262f,   -1.1349f}
 };
 const float u0[MAX_ROTOR_IN_COPTER] = {
     2.4500f,
@@ -126,6 +129,10 @@ void AP_MotorsTao::setup_motors() {
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
         add_motor_raw(AP_MOTORS_MOT_1 + i, 0.0f, 0.0f, 0.0f, i + 1);
     }
+
+    add_motor_raw(AP_MOTORS_MOT_6, 0.0f, 0.0f, 0.0f, 6);
+    add_motor_raw(AP_MOTORS_MOT_7, 0.0f, 0.0f, 0.0f, 7);
+    add_motor_raw(AP_MOTORS_MOT_8, 0.0f, 0.0f, 0.0f, 8);
 }
 
 // Do not use this function.
@@ -148,8 +155,10 @@ void AP_MotorsTao::output_armed_stabilizing() {
     const float pitch = _copter.get_pitch();
     const float yaw = _copter.get_yaw();
     const Vector3f velocity = _copter.get_ned_velocity();
-    const float vx = velocity.x;
-    const float vy = velocity.y;
+    vicon_vx.set_input_filter_d(x);
+    vicon_vy.set_input_filter_d(y);
+    const float vx = vicon_vx.get_d();
+    const float vy = vicon_vy.get_d();
     const float vz = velocity.z;
     const float rollspeed = _copter.get_roll_rate();
     const float pitchspeed = _copter.get_pitch_rate();
@@ -157,10 +166,10 @@ void AP_MotorsTao::output_armed_stabilizing() {
     const float X[12] = {x, y, z, roll, pitch, yaw, vx, vy, vz, rollspeed, pitchspeed, yawspeed};
 
     // Get desired states.
-    const float x0 = remap((float)_copter.get_channel_roll_control_in(),
+    const float y0 = remap((float)_copter.get_channel_roll_control_in(),
             -4500.0f, 4500.0f, -xybound, xybound);
-    const float y0 = remap((float)_copter.get_channel_pitch_control_in(),
-            -4500.0f, 4500.0f, -xybound, xybound);
+    const float x0 = remap((float)_copter.get_channel_pitch_control_in(),
+            -4500.0f, 4500.0f, xybound, -xybound);
     const float thr_ctrl = (float)_copter.get_channel_throttle_control_in();
     float z0 = 0.0f;
     if (thr_ctrl < 500.0f) {
@@ -200,4 +209,9 @@ void AP_MotorsTao::output_armed_stabilizing() {
                 (float)_throttle_radio_min, (float)_throttle_radio_max);
         hal.rcout->write(i, (uint16_t)motor_output);
     }
+
+    // Log velocities.
+    hal.rcout->write(5, (uint16_t)remap(vx, -1.0f, 1.0f, 1000.0f, 2000.0f));
+    hal.rcout->write(6, (uint16_t)remap(vy, -1.0f, 1.0f, 1000.0f, 2000.0f));
+    hal.rcout->write(7, (uint16_t)remap(vz, -1.0f, 1.0f, 1000.0f, 2000.0f));
 }
