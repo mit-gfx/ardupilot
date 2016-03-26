@@ -129,10 +129,6 @@ void AP_MotorsTao::setup_motors() {
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
         add_motor_raw(AP_MOTORS_MOT_1 + i, 0.0f, 0.0f, 0.0f, i + 1);
     }
-
-    add_motor_raw(AP_MOTORS_MOT_6, 0.0f, 0.0f, 0.0f, 6);
-    add_motor_raw(AP_MOTORS_MOT_7, 0.0f, 0.0f, 0.0f, 7);
-    add_motor_raw(AP_MOTORS_MOT_8, 0.0f, 0.0f, 0.0f, 8);
 }
 
 // Do not use this function.
@@ -209,9 +205,4 @@ void AP_MotorsTao::output_armed_stabilizing() {
                 (float)_throttle_radio_min, (float)_throttle_radio_max);
         hal.rcout->write(i, (uint16_t)motor_output);
     }
-
-    // Log velocities.
-    hal.rcout->write(5, (uint16_t)remap(vx, -1.0f, 1.0f, 1000.0f, 2000.0f));
-    hal.rcout->write(6, (uint16_t)remap(vy, -1.0f, 1.0f, 1000.0f, 2000.0f));
-    hal.rcout->write(7, (uint16_t)remap(vz, -1.0f, 1.0f, 1000.0f, 2000.0f));
 }
