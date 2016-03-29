@@ -38,8 +38,8 @@ static AC_PID vicon_vy(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 #define QUAD_ROTOR  1
 #define FIVE_ROTOR  2
 
-#define COPTER_NAME        QUAD_ROTOR
-//#define COPTER_NAME     FIVE_ROTOR
+//#define COPTER_NAME        QUAD_ROTOR
+#define COPTER_NAME     FIVE_ROTOR
 
 #if COPTER_NAME == QUAD_ROTOR
  #define MAX_ROTOR_IN_COPTER 4
@@ -62,11 +62,11 @@ const float upper_z = -2.0f;
  #define MAX_ROTOR_IN_COPTER 5
 // Used by LQR controller.
 const float K[MAX_ROTOR_IN_COPTER][12] = {
-    {-0.2456f,    0.5031f,   -0.3852f,    3.3259f,    1.6579f,    0.3499f,   -0.3794f,    0.7705f,   -0.6189f,    0.7689f,    0.3579f,    0.9001f},
-    { 0.3697f,    0.5070f,   -0.5571f,    3.3138f,   -2.5524f,   -0.3967f,    0.5736f,    0.7753f,   -0.9328f,    0.7042f,   -0.5969f,   -1.0588f},
-    {-0.2455f,   -0.4940f,   -0.4237f,   -3.2780f,    1.6728f,   -0.6145f,   -0.3795f,   -0.7567f,   -0.7208f,   -0.7820f,    0.3925f,   -1.6248f},
-    { 0.3698f,   -0.4959f,   -0.5396f,   -3.2367f,   -2.5753f,    0.5624f,    0.5744f,   -0.7583f,   -0.8657f,   -0.6772f,   -0.6351f,    1.4488f},
-    {-0.7784f,    0.0023f,   -0.2658f,    0.0246f,    5.3185f,    0.1622f,   -1.2049f,    0.0038f,   -0.4289f,    0.0185f,    1.2154f,    0.4131f},
+    {-0.5415f,    1.1271f,   -0.8623f,    8.8878,    4.2352,    1.1080,   -1.0276,    2.1404,   -1.4162,    1.8824,    0.8485,    1.8486},
+    { 0.8349f,    1.1311f,   -1.2429f,    8.7861,   -6.6827,   -1.2535,    1.5914,    2.1429,   -2.0859,    1.7543,   -1.4066,   -2.1438},
+    {-0.5438f,   -1.1083f,   -0.9569,   -8.7899,    4.3199,   -1.9325,   -1.0344,   -2.1066,   -1.6165,   -1.9035,    0.9209,   -3.2932},
+    { 0.8378f,   -1.1053f,   -1.1952,   -8.5612,   -6.7785,    1.7878,    1.5998,   -2.0931,   -1.9637,   -1.6900,   -1.4831,    2.9792},
+    {-1.7356f,    0.0061f,   -0.6060,    0.0766,   13.7658,    0.5198,   -3.3019,    0.0127,   -0.9954,    0.0379,    2.8650,    0.8566},
 };
 const float u0[MAX_ROTOR_IN_COPTER] = {
     2.9240f,
@@ -77,7 +77,7 @@ const float u0[MAX_ROTOR_IN_COPTER] = {
 };
 const float xybound = 2.0f;
 const float lower_z = 10.0f;
-const float upper_z = -1.0f;
+const float upper_z = -5.0f;
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -147,9 +147,10 @@ void AP_MotorsTao::output_armed_stabilizing() {
     const float x = position.x;
     const float y = position.y;
     const float z = position.z;
+    const Vector3f& attitude = _copter.get_vicon_attitude();
     const float roll = _copter.get_roll();
     const float pitch = _copter.get_pitch();
-    const float yaw = _copter.get_yaw();
+    const float yaw = attitude.z;
     const Vector3f velocity = _copter.get_ned_velocity();
     vicon_vx.set_input_filter_d(x);
     vicon_vy.set_input_filter_d(y);
