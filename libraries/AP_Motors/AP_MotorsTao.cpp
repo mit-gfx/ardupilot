@@ -147,10 +147,9 @@ void AP_MotorsTao::output_armed_stabilizing() {
     const float x = position.x;
     const float y = position.y;
     const float z = position.z;
-    const Vector3f& attitude = _copter.get_vicon_attitude();
     const float roll = _copter.get_roll();
     const float pitch = _copter.get_pitch();
-    const float yaw = attitude.z;
+    const float yaw = _copter.get_yaw();
     const Vector3f velocity = _copter.get_ned_velocity();
     vicon_vx.set_input_filter_d(x);
     vicon_vy.set_input_filter_d(y);
@@ -182,6 +181,16 @@ void AP_MotorsTao::output_armed_stabilizing() {
     for (int i = 0; i < 12; ++i) {
         X_minus_X0[i] = X[i] - X0[i];
     }
+    // Take care of the yaw difference so that the abs value of the difference is smaller
+    // than pi.
+    float yaw_diff = X_minus_X0[5];
+    if (yaw_diff > PI) {
+        yaw_diff -= 2 * PI;
+    } else if (yaw_diff < -PI) {
+        yaw_diff += 2 * PI;
+    }
+    X_minus_X0[5] = yaw_diff;
+
     float K_times_X_minus_X0[MAX_ROTOR_IN_COPTER];
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
         K_times_X_minus_X0[i] = 0.0f;
