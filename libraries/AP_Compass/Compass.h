@@ -36,7 +36,11 @@
    maximum number of compass instances available on this platform. If more
    than 1 then redundent sensors may be available
  */
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+// Tao Du
+// taodu@csail.mit.edu
+// Mar 30, 2016
+// Make sure we use only one compass for VICON, i.e., our HIL compass.
+#if GPS_PROTOCOL != GPS_VICON && HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3   
 #else

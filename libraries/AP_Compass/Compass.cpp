@@ -292,6 +292,8 @@ Compass::Compass(void) :
     // Set hil mode to be true if we are using VICON.
 #if GPS_PROTOCOL == GPS_VICON
     _hil_mode = true;
+    // Set _hil healthy to be true when setHIL gets called for the first time.
+    _hil.healthy[0] = false;
     // Make sure the HIL compass is used for yaw.
     _state[0].use_for_yaw = true;
 #endif
@@ -313,22 +315,31 @@ Compass::init()
         // detect available backends. Only called once
         _detect_backends();
     }
-    if (_compass_count != 0) {
-        // get initial health status
-        hal.scheduler->delay(100);
-        read();
-    }
-
     // Tao Du
     // taodu@csail.mit.edu
     // Mar 20, 2016
     // Set offsets, declination and motor compensation to
     // be zero if we are using VICON.
 #if GPS_PROTOCOL == GPS_VICON
+    if (_compass_count != 0) {
+        // Keep waiting until HIL compass becomes healthy.
+        // get initial health status
+        while (!_hil.healthy[0]) {
+            hal.scheduler->delay(1000);
+        }
+        read();
+    }
+
     set_and_save_offsets(0,0,0,0);
     set_declination(0.0f);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         set_motor_compensation(i, Vector3f(0.0f, 0.0f, 0.0f));
+    }
+#else
+    if (_compass_count != 0) {
+        // get initial health status
+        hal.scheduler->delay(100);
+        read();
     }
 #endif
     return true;
