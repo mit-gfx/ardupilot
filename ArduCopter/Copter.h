@@ -162,24 +162,24 @@ class Copter {
     float get_yaw_rate() const {
         return ahrs.get_gyro().z;
     }
+    // Battery voltage.
+    float get_battery_voltage() const {
+        return battery.voltage();
+    }
     // All vicon positions are in north east down coordinates.
     void set_vicon_position(const Vector3f& p) {
         vicon_position = p;
     }
-
     const Vector3f& get_vicon_position() const {
         return vicon_position;
     }
-
     // Vicon attitude angles are in radians.
     void set_vicon_attitude(const Vector3f& a) {
         vicon_attitude = a;
     }
-
     const Vector3f& get_vicon_attitude() const {
         return vicon_attitude;
     }
-
     // Return north-east-down velocity in meter/second.
     const Vector3f get_ned_velocity() const {
         const Vector3f& velocity_neu = inertial_nav.get_velocity() / 100.0f;

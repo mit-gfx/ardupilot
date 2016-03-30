@@ -86,7 +86,7 @@ float remap(const float in_value, const float in_low, const float in_high,
         const float out_low, const float out_high);
 float clamp(const float in_value, const float in_low, const float in_high);
 float wrap180(const float x);
-float thrust2pwm(const float value);
+float thrust2pwm(const float thrust, const float voltage);
 
 // Definitions of helper functions.
 float remap(const float in_value, const float in_low, const float in_high,
@@ -103,21 +103,39 @@ float wrap180(const float x) {
     return x < -180.0f ? (x + 360.0f) : (x > 180.0f ? (x - 360.0f) : x);
 }
 
-float thrust2pwm(const float value) {
-    if (value <= 0.0f) return 1000.0f;
+float thrust2pwm(const float thrust, const float voltage) {
+    // Reject unreasonable data.
+    if (thrust <= 0.0f || voltage <= 10.5f || voltage >= 13.0f) return 1000.0f;
 #if COPTER_NAME == QUAD_ROTOR
-    const float a = 8.081f;
-    const float b = -15.53f;
-    const float c = 7.263f - value;
+    const float mean_throttle = 1475.0f;
+    const float std_throttle = 234.2f;
+    const float mean_voltage = 11.64f;
+    const float std_voltage = 0.1475f;
+    const float p00 = 1.901f;
+    const float p10 = 2.047f;
+    const float p01 = 0.1023f;
+    const float p20 = 0.535f;
+    const float p11 = 0.07185f;
 #elif COPTER_NAME == FIVE_ROTOR
-    const float a = 15.15f;
-    const float b = -28.6f;
-    const float c = 13.14f - value;
+    const float mean_throttle = 1425.0f;
+    const float std_throttle = 201.8140f;
+    const float mean_voltage = 11.3775f;
+    const float std_voltage = 0.3678f;
+    const float p00 = 3.4f;
+    const float p10 = 3.324f;
+    const float p01 = 0.2254f;
+    const float p20 = 0.7846f;
+    const float p11 = 0.1704f;
 #endif
-    const float delta = b * b - 4.0f * a * c;
+    const float y = (voltage - mean_voltage) / std_voltage;
+    const float a = p20;
+    const float b = p11 * y + p10;
+    const float c = p01 * y + p00 - thrust;
+    const float delta = b * b - 4 * a * c;
     if (delta < 0.0f) return 1000.0f;
-    const float pwm2 = (-b + sqrtf(delta)) / 2.0f / a;
-    return clamp(pwm2 * 1000.0f, 1000.0f, 1800.0f);
+    const float x = (-b + sqrtf(delta)) / 2.0f / a;
+    const float throttle = x * std_throttle + mean_throttle;
+    return clamp(throttle, 1000.0f, 1800.0f);
 }
 
 void AP_MotorsTao::setup_motors() {
@@ -203,10 +221,13 @@ void AP_MotorsTao::output_armed_stabilizing() {
         u[i] = -K_times_X_minus_X0[i] + u0[i];
     }
 
+    // Get voltage.
+    const float voltage = _copter.get_battery_voltage();
+
     // Convert u to pwm.
     float pwm[MAX_ROTOR_IN_COPTER];
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
-        pwm[i] = thrust2pwm(u[i]);
+        pwm[i] = thrust2pwm(u[i], voltage);
     }
 
     // Finally write pwm to the motor.
