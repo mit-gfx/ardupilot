@@ -30,6 +30,7 @@
 
 static AC_PID vicon_vx(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 static AC_PID vicon_vy(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
+static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 
 // Tao Du
 // taodu@csail.mit.edu
@@ -62,11 +63,11 @@ const float upper_z = -2.0f;
  #define MAX_ROTOR_IN_COPTER 5
 // Used by LQR controller.
 const float K[MAX_ROTOR_IN_COPTER][12] = {
-    {-0.5415f,    1.1271f,   -0.8623f,    8.8878,    4.2352,    1.1080,   -1.0276,    2.1404,   -1.4162,    1.8824,    0.8485,    1.8486},
-    { 0.8349f,    1.1311f,   -1.2429f,    8.7861,   -6.6827,   -1.2535,    1.5914,    2.1429,   -2.0859,    1.7543,   -1.4066,   -2.1438},
-    {-0.5438f,   -1.1083f,   -0.9569,   -8.7899,    4.3199,   -1.9325,   -1.0344,   -2.1066,   -1.6165,   -1.9035,    0.9209,   -3.2932},
-    { 0.8378f,   -1.1053f,   -1.1952,   -8.5612,   -6.7785,    1.7878,    1.5998,   -2.0931,   -1.9637,   -1.6900,   -1.4831,    2.9792},
-    {-1.7356f,    0.0061f,   -0.6060,    0.0766,   13.7658,    0.5198,   -3.3019,    0.0127,   -0.9954,    0.0379,    2.8650,    0.8566},
+    {-0.5415f,    1.1271f,   -0.8623f,    8.8878f,    4.2352f,    1.1080f,   -1.0276f,    2.1404f,   -1.4162f,    1.8824f,    0.8485f,    1.8486f},
+    { 0.8349f,    1.1311f,   -1.2429f,    8.7861f,   -6.6827f,   -1.2535f,    1.5914f,    2.1429f,   -2.0859f,    1.7543f,   -1.4066f,   -2.1438f},
+    {-0.5438f,   -1.1083f,   -0.9569f,   -8.7899f,    4.3199f,   -1.9325f,   -1.0344f,   -2.1066f,   -1.6165f,   -1.9035f,    0.9209f,   -3.2932f},
+    { 0.8378f,   -1.1053f,   -1.1952f,   -8.5612f,   -6.7785f,    1.7878f,    1.5998f,   -2.0931f,   -1.9637f,   -1.6900f,   -1.4831f,    2.9792f},
+    {-1.7356f,    0.0061f,   -0.6060f,    0.0766f,   13.7658f,    0.5198f,   -3.3019f,    0.0127f,   -0.9954f,    0.0379f,    2.8650f,    0.8566f},
 };
 const float u0[MAX_ROTOR_IN_COPTER] = {
     2.9240f,
@@ -168,12 +169,12 @@ void AP_MotorsTao::output_armed_stabilizing() {
     const float roll = _copter.get_roll();
     const float pitch = _copter.get_pitch();
     const float yaw = _copter.get_yaw();
-    const Vector3f velocity = _copter.get_ned_velocity();
     vicon_vx.set_input_filter_d(x);
     vicon_vy.set_input_filter_d(y);
+    vicon_vz.set_input_filter_d(z);
     const float vx = vicon_vx.get_d();
     const float vy = vicon_vy.get_d();
-    const float vz = velocity.z;
+    const float vz = vicon_vz.get_d();
     const float rollspeed = _copter.get_roll_rate();
     const float pitchspeed = _copter.get_pitch_rate();
     const float yawspeed = _copter.get_yaw_rate();
