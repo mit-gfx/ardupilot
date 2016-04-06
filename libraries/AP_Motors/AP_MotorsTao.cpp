@@ -24,31 +24,38 @@
 #include <AC_PID/AC_PID.h>
 #include "AP_MotorsTao.h"
 
-// Tao Du
-// taodu@csail.mit.edu
-// Mar 22, 2016
-
 static AC_PID vicon_vx(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 static AC_PID vicon_vy(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 
-// Tao Du
-// taodu@csail.mit.edu
-// Mar 22, 2016
-// Currently support three types of copters.
 #define QUAD_ROTOR  1
 #define FIVE_ROTOR  2
 
 //#define COPTER_NAME        QUAD_ROTOR
 #define COPTER_NAME     FIVE_ROTOR
 
+// The meaning of each column
+#define X_COL       0
+#define Y_COL       1
+#define Z_COL       2
+#define ROL_COL     3
+#define PIT_COL     4
+#define YAW_COL     5
+#define X_VEL_COL   6
+#define Y_VEL_COL   7
+#define Z_VEL_COL   8
+#define ROL_VEL_COL 9
+#define PIT_VEL_COL 10
+#define YAW_VEL_COL 11
+#define NUM_COL     12
+
 #if COPTER_NAME == QUAD_ROTOR
  #define MAX_ROTOR_IN_COPTER 4
-const float K[MAX_ROTOR_IN_COPTER][12] = {
-    {-0.8660f,  -0.8660f,   -0.8660f,   -4.8564f,   4.8564f,    0.8660f,    -1.2682f,   -1.2682f,   -1.0877f,   -0.9262f,   0.9262f,    1.1349f},
-    {0.8660f,   0.8660f,    -0.8660f,   4.8564f,    -4.8564f,   0.8660f,    1.2682f,    1.2682f,    -1.0877f,   0.9262f,    -0.9262f,   1.1349f},
-    {-0.8660f,  0.8660f,    -0.8660f,   4.8564f,    4.8564f,    -0.8660f,   -1.2682f,   1.2682f,    -1.0877f,   0.9262f,    0.9262f,    -1.1349f},
-    {0.8660f,   -0.8660f,   -0.8660f,   -4.8564f,   -4.8564f,   -0.8660f,   1.2682f,    -1.2682f,   -1.0877f,   -0.9262f,   -0.9262f,   -1.1349f}
+const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
+    {-0.8660f,   -0.8660f,   -0.8660f,   -4.8564f,    4.8564f,    0.8660f,   -1.2682f,   -1.2682f,   -1.0877f,   -0.9262f,    0.9262f,     1.1349f},
+    { 0.8660f,    0.8660f,   -0.8660f,    4.8564f,   -4.8564f,    0.8660f,    1.2682f,    1.2682f,   -1.0877f,    0.9262f,   -0.9262f,     1.1349f},
+    {-0.8660f,    0.8660f,   -0.8660f,    4.8564f,    4.8564f,   -0.8660f,   -1.2682f,    1.2682f,   -1.0877f,    0.9262f,    0.9262f,    -1.1349f},
+    { 0.8660f,   -0.8660f,   -0.8660f,   -4.8564f,   -4.8564f,   -0.8660f,    1.2682f,   -1.2682f,   -1.0877f,   -0.9262f,   -0.9262f,    -1.1349f},
 };
 const float u0[MAX_ROTOR_IN_COPTER] = {
     2.4500f,
@@ -62,21 +69,21 @@ const float upper_z = -2.0f;
 #elif COPTER_NAME == FIVE_ROTOR
  #define MAX_ROTOR_IN_COPTER 5
 // Used by LQR controller.
-const float K[MAX_ROTOR_IN_COPTER][12] = {
+const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
     {-0.5415f,    1.1271f,   -0.8623f,    8.8878f,    4.2352f,    1.1080f,   -1.0276f,    2.1404f,   -1.4162f,    1.8824f,    0.8485f,    1.8486f},
     { 0.8349f,    1.1311f,   -1.2429f,    8.7861f,   -6.6827f,   -1.2535f,    1.5914f,    2.1429f,   -2.0859f,    1.7543f,   -1.4066f,   -2.1438f},
     {-0.5438f,   -1.1083f,   -0.9569f,   -8.7899f,    4.3199f,   -1.9325f,   -1.0344f,   -2.1066f,   -1.6165f,   -1.9035f,    0.9209f,   -3.2932f},
     { 0.8378f,   -1.1053f,   -1.1952f,   -8.5612f,   -6.7785f,    1.7878f,    1.5998f,   -2.0931f,   -1.9637f,   -1.6900f,   -1.4831f,    2.9792f},
     {-1.7356f,    0.0061f,   -0.6060f,    0.0766f,   13.7658f,    0.5198f,   -3.3019f,    0.0127f,   -0.9954f,    0.0379f,    2.8650f,    0.8566f},
 };
-const float u0[MAX_ROTOR_IN_COPTER] = {
+float u0[MAX_ROTOR_IN_COPTER] = {
     2.9240f,
     4.9958f,
     4.0495f,
     4.0497f,
     2.0716f,
 };
-const float xybound = 2.0f;
+const float xybound = 4.0f;
 const float lower_z = 10.0f;
 const float upper_z = -5.0f;
 #endif
@@ -178,7 +185,7 @@ void AP_MotorsTao::output_armed_stabilizing() {
     const float rollspeed = _copter.get_roll_rate();
     const float pitchspeed = _copter.get_pitch_rate();
     const float yawspeed = _copter.get_yaw_rate();
-    const float X[12] = {x, y, z, roll, pitch, yaw, vx, vy, vz, rollspeed, pitchspeed, yawspeed};
+    const float X[NUM_COL] = {x, y, z, roll, pitch, yaw, vx, vy, vz, rollspeed, pitchspeed, yawspeed};
 
     // Get desired states.
     const float y0 = remap((float)_copter.get_channel_roll_control_in(),
@@ -192,12 +199,12 @@ void AP_MotorsTao::output_armed_stabilizing() {
     } else {
         z0 = remap(thr_ctrl, 500.0f, 1000.0f, 0.0f, upper_z);
     }
-    const float X0[12] = {x0, y0, z0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    const float X0[NUM_COL] = {x0, y0, z0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
     // Compute the desired thrust.
     // u = -K(X - X0) + u0.
-    float X_minus_X0[12];
-    for (int i = 0; i < 12; ++i) {
+    float X_minus_X0[NUM_COL];
+    for (int i = 0; i < NUM_COL; ++i) {
         X_minus_X0[i] = X[i] - X0[i];
     }
     // Take care of the yaw difference so that the abs value of the difference is smaller
@@ -213,7 +220,7 @@ void AP_MotorsTao::output_armed_stabilizing() {
     float K_times_X_minus_X0[MAX_ROTOR_IN_COPTER];
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
         K_times_X_minus_X0[i] = 0.0f;
-        for (int j = 0; j < 12; ++j) {
+        for (int j = 0; j < NUM_COL; ++j) {
             K_times_X_minus_X0[i] += K[i][j] * X_minus_X0[j];
         }
     }
@@ -222,13 +229,18 @@ void AP_MotorsTao::output_armed_stabilizing() {
         u[i] = -K_times_X_minus_X0[i] + u0[i];
     }
 
-    // Get voltage.
+    // Get the real voltage.
     const float voltage = _copter.get_battery_voltage();
+    // Currently we assume the voltage is constant, this simplifies our
+    // pwm calculation. Our experiment shows that simply injecting the real
+    // voltage into thrust2pwm results in "jittering" pwm and voltage, because
+    // when pwm changes voltage changes as well.
+    const float voltage_base = 11.2f;
 
     // Convert u to pwm.
     float pwm[MAX_ROTOR_IN_COPTER];
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
-        pwm[i] = thrust2pwm(u[i], voltage);
+        pwm[i] = thrust2pwm(u[i], voltage_base);
     }
 
     // Finally write pwm to the motor.
