@@ -119,7 +119,7 @@ float wrap180(const float x) {
 
 float thrust2pwm(const float thrust, const float voltage) {
     // Reject unreasonable data.
-    if (thrust <= 0.0f || voltage <= 10.5f || voltage >= 13.0f) return 1000.0f;
+    if (thrust <= 0.0f || voltage <= 9.0f || voltage >= 13.0f) return 1000.0f;
 #if COPTER_NAME == QUAD_ROTOR
     const float mean_throttle = 1475.0f;
     const float std_throttle = 234.2f;
