@@ -88,6 +88,12 @@ const float lower_z = 10.0f;
 const float upper_z = -5.0f;
 #endif
 
+// For voltage estimation.
+static int last_frame = 0;
+static int current_frame = 0;
+static float average_voltage = 0.0f;
+static float voltage_sum = 0.0f;
+
 extern const AP_HAL::HAL& hal;
 
 float remap(const float in_value, const float in_low, const float in_high,
@@ -229,18 +235,22 @@ void AP_MotorsTao::output_armed_stabilizing() {
         u[i] = -K_times_X_minus_X0[i] + u0[i];
     }
 
-    // Get the real voltage.
-    const float voltage = _copter.get_battery_voltage();
-    // Currently we assume the voltage is constant, this simplifies our
-    // pwm calculation. Our experiment shows that simply injecting the real
-    // voltage into thrust2pwm results in "jittering" pwm and voltage, because
-    // when pwm changes voltage changes as well.
-    const float voltage_base = 11.2f;
+    // Increment current frame.
+    ++current_frame;
+    // Compute the mean voltage since last update. We take the mean voltage during the last
+    // 2 seconds. Note that this function gets called at 400Hz.
+    if (current_frame - last_frame > 400 * 2) {
+        average_voltage = voltage_sum / (current_frame - last_frame);
+        voltage_sum = 0.0f;
+        last_frame = current_frame;
+    } else {
+        voltage_sum += _copter.get_battery_voltage();
+    }
 
     // Convert u to pwm.
     float pwm[MAX_ROTOR_IN_COPTER];
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
-        pwm[i] = thrust2pwm(u[i], voltage_base);
+        pwm[i] = thrust2pwm(u[i], average_voltage);
     }
 
     // Finally write pwm to the motor.
