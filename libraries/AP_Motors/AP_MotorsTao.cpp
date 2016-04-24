@@ -33,8 +33,8 @@ static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 #define BUNNY_ROTOR 3
 
 //#define COPTER_NAME       QUAD_ROTOR
-//#define COPTER_NAME       FIVE_ROTOR
-#define COPTER_NAME       BUNNY_ROTOR
+#define COPTER_NAME       FIVE_ROTOR
+//#define COPTER_NAME       BUNNY_ROTOR
 
 // The meaning of each column
 #define X_COL       0
@@ -73,22 +73,23 @@ const float upper_z = -2.0f;
 // Used by LQR controller.
 // Q = [5 5 5 10 10 10 10 10 10 10 10 10]. Payload = 1554g.
 const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {-0.5445f,  1.1180f,    -0.8554f,   8.7558f,    4.2709f,    1.1334f,    -1.0339f,   2.1208f,    -1.5705f,   1.8072f,    0.8593f,    1.8666f},
-    {0.8240f,   1.1180f,    -1.2775f,   8.7558f,    -6.5564f,   -1.2181f,   1.5686f,    2.1208f,    -2.4080f,   1.8072f,    -1.3750f,   -2.0968f},
-    {-0.5470f,  -1.1180f,   -0.9682f,   -8.7558f,   4.3544f,    -1.9059f,   -1.0412f,   -2.1208f,   -1.8438f,   -1.8072f,   0.9262f,    -3.2411f},
-    {0.8266f,   -1.1180f,   -1.1647f,   -8.7558f,   -6.6399f,   1.8212f,    1.5759f,    -2.1208f,   -2.1348f,   -1.8072f,   -1.4418f,   3.0109f},
-    {-1.7442f,  -0.0000f,   -0.5848f,   -0.0000f,   13.8179f,   0.5315f,    -3.3174f,   -0.0000f,   -1.0768f,   0.0000f,    2.8728f,    0.8653f},
+    {-0.4836f,  1.1232f,    -0.9831f,   8.8479f,    4.6615f,    2.5381f,    -0.9332f,   2.1304f,    -1.8372f,   1.7477f,    1.0986f,    2.6683f},
+    {0.9113f,   1.0793f,    -1.1748f,   8.5571f,    -6.8979f,   -0.5180f,   1.7446f,    2.0399f,    -2.1869f,   1.7835f,    -1.5664f,   -1.4562f},
+    {-0.5997f,  -1.0919f,   -0.9315f,   -8.4527f,   4.9845f,    0.3443f,    -1.1268f,   -2.0707f,   -1.7367f,   -1.7810f,   1.0254f,    1.1883f},
+    {1.0117f,   -1.1738f,   -1.1185f,   -8.8465f,   -7.2243f,   -0.5955f,   1.9120f,    -2.2179f,   -2.0831f,   -1.7928f,   -1.5098f,   -0.2539f},
+    {-1.5976f,  -0.0578f,   -0.7312f,   -0.1907f,   13.1751f,   -2.1053f,   -3.0492f,   -0.1066f,   -1.3638f,   0.0348f,    2.6985f,    -2.3538f},
 };
 float u0[MAX_ROTOR_IN_COPTER] = {
-    5.7380f,
-    9.7297f,
-    7.7339f,
-    7.7339f,
-    3.9917f,
+    6.6914f,
+    8.8012f,
+    6.6475f,
+    8.7552f,
+    4.3989f,
 };
 const float xybound = 4.0f;
 const float lower_z = 10.0f;
 const float upper_z = -5.0f;
+const float max_pwm = 1800.0f;
 #elif COPTER_NAME == BUNNY_ROTOR
  #define MAX_ROTOR_IN_COPTER 4
 // Used by LQR controller.
@@ -108,6 +109,7 @@ float u0[MAX_ROTOR_IN_COPTER] = {
 const float xybound = 5.0f;
 const float lower_z = 20.0f;
 const float upper_z = -10.0f;
+const float max_pwm = 2000.0f;
 
 #else
     // Do nothing.
@@ -188,7 +190,7 @@ float thrust2pwm_kde_14inch(const float thrust, const float voltage) {
     if (delta < 0.0f) return 1000.0f;
     const float x = (-b + sqrtf(delta)) / 2.0f / a;
     const float throttle = x * std_throttle + mean_throttle;
-    return clamp(throttle, 1000.0f, 2000.0f);
+    return clamp(throttle, 1000.0f, max_pwm);
 }
 
 float thrust2pwm_kde_10inch(const float thrust, const float voltage) {
@@ -224,7 +226,7 @@ float thrust2pwm_kde_10inch(const float thrust, const float voltage) {
     if (delta < 0.0f) return 1000.0f;
     const float x = (-b + sqrtf(delta)) / 2.0f / a;
     const float throttle = x * std_throttle + mean_throttle;
-    return clamp(throttle, 1000.0f, 2000.0f);
+    return clamp(throttle, 1000.0f, max_pwm);
 }
 
 void AP_MotorsTao::setup_motors() {
