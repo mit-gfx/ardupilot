@@ -33,8 +33,8 @@ static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 #define BUNNY_ROTOR 3
 
 //#define COPTER_NAME       QUAD_ROTOR
-#define COPTER_NAME       FIVE_ROTOR
-//#define COPTER_NAME       BUNNY_ROTOR
+//#define COPTER_NAME       FIVE_ROTOR
+#define COPTER_NAME       BUNNY_ROTOR
 
 // The meaning of each column
 #define X_COL       0
@@ -93,18 +93,18 @@ const float max_pwm = 1800.0f;
 #elif COPTER_NAME == BUNNY_ROTOR
  #define MAX_ROTOR_IN_COPTER 4
 // Used by LQR controller.
-// Q = [2 2 2 4 4 4 4 4 4 4 4 4]. R = [1 2 1 1]. Mass = 1800g.
+// Q = [5 5 5 5 5 10 5 5 5 5 5 5]. R = [8 8 1 1]. Mass = 1800g.
 const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {0.1037f,   -1.0937f,   -0.6884f,   -8.6630f,   -0.7881f,   0.7989f,    0.1955f,    -2.0804f,   -1.2981f,   -1.7918f,   -0.1562f,   1.3643f},
-    {0.0259f,   0.6277f,    -0.5147f,   5.0229f,    -0.2307f,   0.8251f,    0.0506f,    1.1960f,    -0.9802f,   1.0759f,    -0.0530f,   1.3974f},
-    {-1.0052f,  0.0370f,    -0.7478f,   0.2431f,    8.0925f,    -0.9263f,   -1.9185f,   0.0679f,    -1.3432f,   0.0321f,    1.7199f,    -1.4669f},
-    {0.9887f,   0.1195f,    -0.6611f,   0.9734f,    -7.9556f,   -1.0687f,   1.8869f,    0.2290f,    -1.1776f,   0.1983f,    -1.6862f,   -1.7073f},
+    {0.0246f,   -0.5920f,   -0.4130f,   -3.7786f,   -0.1293f,   0.4548f,    0.0356f,    -0.8985f,   -0.7387f,   -0.8130f,   -0.0200f,   0.8764f},
+    {0.0106f,   0.5087f,    -0.3376f,   3.2607f,    -0.0709f,   0.7100f,    0.0165f,    0.7725f,    -0.6691f,   0.7195f,    -0.0125f,   1.2507f},
+    {-1.5924f,  0.2247f,    -1.1925f,   1.3277f,    9.4032f,    -1.4084f,   -2.3648f,   0.3349f,    -1.5937f,   0.2420f,    1.8876f,    -1.7431f},
+    {1.5680f,   0.2749f,    -1.1409f,   1.7197f,    -9.2829f,   -1.5259f,   2.3299f,    0.4160f,    -1.4895f,   0.3391f,    -1.8741f,   -1.9494f},
 };
 float u0[MAX_ROTOR_IN_COPTER] = {
-    5.2691f,
-    4.1127f,
-    4.4793f,
-    3.7790f,
+    4.5768f,
+    4.8049f,
+    4.5112f,
+    3.7470f,
 };
 const float xybound = 5.0f;
 const float lower_z = 20.0f;
@@ -332,7 +332,7 @@ void AP_MotorsTao::output_armed_stabilizing() {
     }
 #else
     // For bunny we have different propellers for different motors.
-    pwm[0] = thrust2pwm_kde_14inch(u[0], average_voltage);
+    pwm[0] = thrust2pwm_kde_10inch(u[0], average_voltage);
     pwm[1] = thrust2pwm_kde_10inch(u[1], average_voltage);
     pwm[2] = thrust2pwm_kde_14inch(u[2], average_voltage);
     pwm[3] = thrust2pwm_kde_14inch(u[3], average_voltage);
