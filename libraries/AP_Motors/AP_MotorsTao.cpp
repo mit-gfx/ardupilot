@@ -32,9 +32,9 @@ static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 #define FIVE_ROTOR  2
 #define BUNNY_ROTOR 3
 
-//#define COPTER_NAME       QUAD_ROTOR
+#define COPTER_NAME       QUAD_ROTOR
 //#define COPTER_NAME       FIVE_ROTOR
-#define COPTER_NAME       BUNNY_ROTOR
+//#define COPTER_NAME       BUNNY_ROTOR
 
 // The meaning of each column
 #define X_COL       0
@@ -53,21 +53,23 @@ static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 
 #if COPTER_NAME == QUAD_ROTOR
  #define MAX_ROTOR_IN_COPTER 4
+// Q = [1 1 1 2 2 2 2 2 2 2 2 2]. R = [1 1 1 1]. Mass = 1.4kg.
 const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {-0.8660f,   -0.8660f,   -0.8660f,   -4.8564f,    4.8564f,    0.8660f,   -1.2682f,   -1.2682f,   -1.0877f,   -0.9262f,    0.9262f,     1.1349f},
-    { 0.8660f,    0.8660f,   -0.8660f,    4.8564f,   -4.8564f,    0.8660f,    1.2682f,    1.2682f,   -1.0877f,    0.9262f,   -0.9262f,     1.1349f},
-    {-0.8660f,    0.8660f,   -0.8660f,    4.8564f,    4.8564f,   -0.8660f,   -1.2682f,    1.2682f,   -1.0877f,    0.9262f,    0.9262f,    -1.1349f},
-    { 0.8660f,   -0.8660f,   -0.8660f,   -4.8564f,   -4.8564f,   -0.8660f,    1.2682f,   -1.2682f,   -1.0877f,   -0.9262f,   -0.9262f,    -1.1349f},
+    {0.0000f,   -0.7071f,   -0.5000f,   -5.5433f,   0.0000f,    -0.7071f,   0.0000f,    -1.3416f,   -0.9220f,   -1.1453f,   0.0000f,    -1.0530f,   },
+    {0.0000f,   0.7071f,    -0.5000f,   5.5433f,    0.0000f,    -0.7071f,   0.0000f,    1.3416f,    -0.9220f,   1.1453f,    0.0000f,    -1.0530f,   },
+    {-0.7071f,  0.0000f,    -0.5000f,   0.0000f,    5.5433f,    0.7071f,    -1.3416f,   0.0000f,    -0.9220f,   0.0000f,    1.1453f,    1.0530f,    },
+    {0.7071f,   0.0000f,    -0.5000f,   0.0000f,    -5.5433f,   0.7071f,    1.3416f,    0.0000f,    -0.9220f,   0.0000f,    -1.1453f,   1.0530f,    },
 };
 const float u0[MAX_ROTOR_IN_COPTER] = {
-    2.4500f,
-    2.4500f,
-    2.4500f,
-    2.4500f
+    3.4300f,
+    3.4300f,
+    3.4300f,
+    3.4300f
 };
-const float xybound = 2.0f;
-const float lower_z = 5.0f;
-const float upper_z = -2.0f;
+const float xybound = 3.0f;
+const float lower_z = 7.0f;
+const float upper_z = -3.0f;
+const float max_pwm = 2000.0f;
 #elif COPTER_NAME == FIVE_ROTOR
  #define MAX_ROTOR_IN_COPTER 5
 // Used by LQR controller.
@@ -148,17 +150,6 @@ float wrap180(const float x) {
 float thrust2pwm_kde_14inch(const float thrust, const float voltage) {
     // Reject unreasonable data.
     if (thrust <= 0.0f || voltage <= 7.5f || voltage >= 13.0f) return 1000.0f;
-#if COPTER_NAME == QUAD_ROTOR
-    const float mean_throttle = 1475.0f;
-    const float std_throttle = 234.2f;
-    const float mean_voltage = 11.64f;
-    const float std_voltage = 0.1475f;
-    const float p00 = 1.901f;
-    const float p10 = 2.047f;
-    const float p01 = 0.1023f;
-    const float p20 = 0.535f;
-    const float p11 = 0.07185f;
-#elif COPTER_NAME == FIVE_ROTOR || COPTER_NAME == BUNNY_ROTOR
     // Output from matlab:
     /*
     Linear model Poly21:
@@ -181,7 +172,6 @@ float thrust2pwm_kde_14inch(const float thrust, const float voltage) {
     const float p01 = 0.2254f;
     const float p20 = 0.7846f;
     const float p11 = 0.1704f;
-#endif
     const float y = (voltage - mean_voltage) / std_voltage;
     const float a = p20;
     const float b = p11 * y + p10;
@@ -326,16 +316,20 @@ void AP_MotorsTao::output_armed_stabilizing() {
 
     // Convert u to pwm.
     float pwm[MAX_ROTOR_IN_COPTER];
-#if COPTER_NAME != BUNNY_ROTOR
-    for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
-        pwm[i] = thrust2pwm_kde_14inch(u[i], average_voltage);
-    }
-#else
+#if COPTER_NAME == BUNNY_ROTOR
     // For bunny we have different propellers for different motors.
     pwm[0] = thrust2pwm_kde_10inch(u[0], average_voltage);
     pwm[1] = thrust2pwm_kde_10inch(u[1], average_voltage);
     pwm[2] = thrust2pwm_kde_14inch(u[2], average_voltage);
     pwm[3] = thrust2pwm_kde_14inch(u[3], average_voltage);
+#elif COPTER_NAME == QUAD_ROTOR
+    for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
+        pwm[i] = thrust2pwm_kde_10inch(u[i], average_voltage);
+    }
+#else
+    for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
+        pwm[i] = thrust2pwm_kde_14inch(u[i], average_voltage);
+    }
 #endif
 
     // Finally write pwm to the motor.
