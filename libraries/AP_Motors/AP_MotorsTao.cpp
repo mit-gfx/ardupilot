@@ -55,16 +55,16 @@ static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
  #define MAX_ROTOR_IN_COPTER 4
 // Q = [1 1 1 2 2 2 2 2 2 2 2 2]. R = [1 1 1 1]. Mass = 1.4kg.
 const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {0.0000f,   -0.7071f,   -0.5000f,   -5.5433f,   0.0000f,    -0.7071f,   0.0000f,    -1.3416f,   -0.9220f,   -1.1453f,   0.0000f,    -1.0530f,   },
-    {0.0000f,   0.7071f,    -0.5000f,   5.5433f,    0.0000f,    -0.7071f,   0.0000f,    1.3416f,    -0.9220f,   1.1453f,    0.0000f,    -1.0530f,   },
-    {-0.7071f,  0.0000f,    -0.5000f,   0.0000f,    5.5433f,    0.7071f,    -1.3416f,   0.0000f,    -0.9220f,   0.0000f,    1.1453f,    1.0530f,    },
-    {0.7071f,   0.0000f,    -0.5000f,   0.0000f,    -5.5433f,   0.7071f,    1.3416f,    0.0000f,    -0.9220f,   0.0000f,    -1.1453f,   1.0530f,    },
+    {0.0000f,   -0.7071f,   -0.5158f,   -5.5433f,   0.0000f,    -0.6840f,   0.0000f,    -1.3416f,   -0.9573f,   -1.1453f,   0.0000f,    -1.0093f},
+    {0.0000f,   0.7071f,    -0.5158f,   5.5433f,    0.0000f,    -0.6840f,   0.0000f,    1.3416f,    -0.9573f,   1.1453f,    0.0000f,    -1.0093f},
+    {-0.7071f,  -0.0000f,   -0.4837f,   0.0000f,    5.5433f,    0.7295f,    -1.3416f,   0.0000f,    -0.8858f,   0.0000f,    1.1453f,    1.0586f},
+    {0.7071f,   -0.0000f,   -0.4837f,   0.0000f,    -5.5433f,   0.7295f,    1.3416f,    0.0000f,    -0.8858f,   0.0000f,    -1.1453f,   1.0586f},
 };
 const float u0[MAX_ROTOR_IN_COPTER] = {
-    3.4300f,
-    3.4300f,
-    3.4300f,
-    3.4300f
+    3.6485f,
+    3.6485f,
+    3.2115f,
+    3.2115f,
 };
 const float xybound = 3.0f;
 const float lower_z = 7.0f;
@@ -323,9 +323,10 @@ void AP_MotorsTao::output_armed_stabilizing() {
     pwm[2] = thrust2pwm_kde_14inch(u[2], average_voltage);
     pwm[3] = thrust2pwm_kde_14inch(u[3], average_voltage);
 #elif COPTER_NAME == QUAD_ROTOR
-    for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
-        pwm[i] = thrust2pwm_kde_10inch(u[i], average_voltage);
-    }
+    pwm[0] = thrust2pwm_kde_10inch(u[0], average_voltage);
+    pwm[1] = thrust2pwm_kde_10inch(u[1], average_voltage);
+    pwm[2] = thrust2pwm_kde_14inch(u[2], average_voltage);
+    pwm[3] = thrust2pwm_kde_14inch(u[3], average_voltage);
 #else
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
         pwm[i] = thrust2pwm_kde_14inch(u[i], average_voltage);
