@@ -32,8 +32,8 @@ static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 #define FIVE_ROTOR  2
 #define BUNNY_ROTOR 3
 
-#define COPTER_NAME       QUAD_ROTOR
-//#define COPTER_NAME       FIVE_ROTOR
+//#define COPTER_NAME       QUAD_ROTOR
+#define COPTER_NAME       FIVE_ROTOR
 //#define COPTER_NAME       BUNNY_ROTOR
 
 // The meaning of each column
@@ -73,20 +73,20 @@ const float max_pwm = 2000.0f;
 #elif COPTER_NAME == FIVE_ROTOR
  #define MAX_ROTOR_IN_COPTER 5
 // Used by LQR controller.
-// Q = [5 5 5 10 10 10 10 10 10 10 10 10]. Payload = 1710g.
+// Q = [5 5 5 10 10 10 10 10 10 10 10 10]. R = [1 1 1 1 1]. Payload = 0g.
 const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {-0.4849f,  1.1227f,    -0.9833f,   8.8479f,    4.6687f,    2.5393f,    -0.9345f,   2.1293f,    -1.8534f,   1.7476f,    1.0990f,    2.6706f},
-    {0.9129f,   1.0793f,    -1.1748f,   8.5562f,    -6.9016f,   -0.5175f,   1.7486f,    2.0394f,    -2.2077f,   1.7836f,    -1.5654f,   -1.4553f},
-    {-0.5963f,  -1.0935f,   -0.9312f,   -8.4579f,   4.9731f,    0.3432f,    -1.1200f,   -2.0736f,   -1.7519f,   -1.7812f,   1.0255f,    1.1868f},
-    {1.0087f,   -1.1729f,   -1.1189f,   -8.8432f,   -7.2087f,   -0.5975f,   1.9082f,    -2.2169f,   -2.1046f,   -1.7926f,   -1.5076f,   -0.2570f},
-    {-1.5996f,  -0.0564f,   -0.7308f,   -0.1882f,   13.1810f,   -2.1045f,   -3.0516f,   -0.1047f,   -1.3738f,   0.0346f,    2.6983f,    -2.3525f},
+    {-1.1449f,  1.2170f,    -0.9140f,   9.0628f,    8.4930f,    0.7810f,    -2.1477f,   2.2816f,    -1.5288f,   1.8316f,    1.6601f,    1.1213f},
+    {1.2459f,   1.1603f,    -1.0499f,   8.9675f,    -9.4022f,   0.1916f,    2.3449f,    2.1937f,    -1.7601f,   1.8482f,    -1.8896f,   0.2290f},
+    {-0.9253f,  -0.9903f,   -0.9476f,   -8.2539f,   7.6533f,    1.3002f,    -1.7763f,   -1.9074f,   -1.5844f,   -1.7372f,   1.6345f,    2.0053f},
+    {1.0197f,   -1.0651f,   -1.0828f,   -8.4933f,   -8.4096f,   0.5188f,    1.9554f,    -2.0291f,   -1.8154f,   -1.7610f,   -1.8166f,   0.8256f},
+    {-0.4909f,  -0.2397f,   -0.9960f,   -0.7271f,   3.9168f,    -2.7198f,   -0.9340f,   -0.3881f,   -1.6809f,   -0.0768f,   0.8568f,    -4.1149f},
 };
 float u0[MAX_ROTOR_IN_COPTER] = {
-    6.9843f,
-    9.1864f,
-    6.9385f,
-    9.1384f,
-    4.5914f,
+    3.5751f,
+    4.1658f,
+    3.6943f,
+    4.2955f,
+    4.1502f,
 };
 const float xybound = 4.0f;
 const float lower_z = 10.0f;
