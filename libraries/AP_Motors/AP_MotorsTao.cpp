@@ -74,23 +74,24 @@ const float max_pwm = 2000.0f;
  #define MAX_ROTOR_IN_COPTER 5
 // Used by LQR controller.
 // Unoptimized Payload. The weight of the unoptimized payload pentacopter is 2130.9g(Including the box, without battery).
-// Battery: 192.0g.
-// Payload: 840.4g.
-// Total weight: 3163.3g.
+// Unoptimized Payload. The weight of the unoptimized payload pentacopter is 2130.9g(Including the box, without battery).
+// Battery: 186.1g.
+// Payload: 952.4g.
+// Total weight: 3269.4g.
 // Q = [5 5 5 10 10 10 10 10 10 10 10 10]. R = [1 1 1 1 1].
 const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {-0.5471f,  1.1291f,    -1.0214f,   8.7034f,    4.2218f,    1.5050f,    -1.0351f,   2.1333f,    -1.9200f,   1.8014f,    0.8357f,    2.3585f},
-    {0.8268f,   1.1291f,    -1.1434f,   8.5847f,    -6.4750f,   -0.9840f,   1.5681f,    2.1284f,    -2.0521f,   1.7014f,    -1.3415f,   -1.4000f},
-    {-0.5486f,  -1.1069f,   -1.0443f,   -8.3910f,   4.2326f,    1.5056f,    -1.0378f,   -2.0856f,   -1.9620f,   -1.6400f,   0.8376f,    2.3522f},
-    {0.8253f,   -1.1068f,   -1.1663f,   -8.5096f,   -6.4642f,   -0.9835f,   1.5654f,    -2.0905f,   -2.0942f,   -1.7401f,   -1.3397f,   -1.4063f},
-    {-1.7422f,  0.0055f,    -0.4455f,   -0.0479f,   13.6236f,   -1.8796f,   -3.3034f,   0.0066f,    -0.7417f,   -0.0662f,   2.8171f,    -2.8153f},
+    {-0.5473f,  1.1291f,    -1.0237f,   8.7032f,    4.2240f,    1.5017f,    -1.0354f,   2.1333f,    -1.9375f,   1.8013f,    0.8364f,    2.3546f},
+    {0.8265f,   1.1291f,    -1.1420f,   8.5846f,    -6.4722f,   -0.9877f,   1.5677f,    2.1284f,    -2.0629f,   1.7013f,    -1.3407f,   -1.4043f},
+    {-0.5487f,  -1.1068f,   -1.0466f,   -8.3911f,   4.2348f,    1.5022f,    -1.0382f,   -2.0856f,   -1.9798f,   -1.6401f,   0.8382f,    2.3482f},
+    {0.8251f,   -1.1068f,   -1.1649f,   -8.5097f,   -6.4613f,   -0.9873f,   1.5649f,    -2.0905f,   -2.1052f,   -1.7402f,   -1.3388f,   -1.4107f},
+    {-1.7423f,  0.0055f,    -0.4422f,   -0.0480f,   13.6248f,   -1.8809f,   -3.3036f,   0.0066f,    -0.7401f,   -0.0662f,   2.8174f,    -2.8169f},
 };
 float u0[MAX_ROTOR_IN_COPTER] = {
-    7.6732f,
-    6.8495f,
-    7.8270f,
-    7.0033f,
-    1.6473f,
+    7.9306f,
+    7.0793f,
+    8.0895f,
+    7.2382f,
+    1.7026f,
 };
 const float xybound = 4.0f;
 const float lower_z = 10.0f;
