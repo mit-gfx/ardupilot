@@ -32,9 +32,7 @@ static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 #define FIVE_ROTOR  2
 #define BUNNY_ROTOR 3
 
-#define COPTER_NAME       QUAD_ROTOR
-//#define COPTER_NAME       FIVE_ROTOR
-//#define COPTER_NAME       BUNNY_ROTOR
+#define COPTER_NAME       DJI_COPTER
 
 // The meaning of each column
 #define X_COL       0
@@ -51,68 +49,27 @@ static AC_PID vicon_vz(0.0f, 0.0f, 1.0f, 10.0f, 20.0f, MAIN_LOOP_SECONDS);
 #define YAW_VEL_COL 11
 #define NUM_COL     12
 
-#if COPTER_NAME == QUAD_ROTOR
+#if COPTER_NAME == DJI_COPTER
  #define MAX_ROTOR_IN_COPTER 4
-// Q = [1 1 1 2 2 6 2 2 2 2 2 2]. R = [1 1 1 1]. Mass = 1.2912kg.
+// Q = [1 1 1 2 2 10 2 2 2 2 2 2]. R = [5 5 5 5]. Mass = 1.187kg.
+// X frame
 const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {-0.0000f,  -0.7071f,   -0.5136f,   -5.5433f,   0.0000f,    -1.1905f,   0.0000f,    -1.3416f,   -0.9383f,   -1.1453f,   0.0000f,    -1.4764f},
-    {0.0000f,   0.7071f,    -0.5136f,   5.5433f,    -0.0000f,   -1.1905f,   -0.0000f,   1.3416f,    -0.9383f,   1.1453f,    0.0000f,    -1.4764f},
-    {-0.7071f,  -0.0000f,   -0.4860f,   -0.0000f,   5.7472f,    1.2581f,    -1.3525f,   -0.0000f,   -0.8752f,   0.0000f,    1.2318f,    1.5276f},
-    {0.7071f,   0.0000f,    -0.4860f,   0.0000f,    -5.7472f,   1.2581f,    1.3525f,    0.0000f,    -0.8752f,   0.0000f,    -1.2318f,   1.5276f},
+    {-0.223583f,  0.223594f,  -0.223643f,  2.873927f,  -0.000069f,  0.707106f,  -0.438980f,  0.439001f,  -0.482479f,  0.686363f,  -0.000016f,  1.029338f,  },
+    {-0.223583f,  -0.223619f,  -0.223618f,  -0.000220f,  2.874092f,  -0.707107f,  -0.438980f,  -0.439050f,  -0.482425f,  -0.000041f,  0.686407f,  -1.029340f,  },
+    {0.223630f,  -0.223619f,  -0.223571f,  -2.874391f,  -0.000069f,  0.707107f,  0.439072f,  -0.439050f,  -0.482323f,  -0.686479f,  -0.000016f,  1.029342f,  },
+    {0.223630f,  0.223594f,  -0.223596f,  -0.000220f,  -2.874229f,  -0.707107f,  0.439072f,  0.439001f,  -0.482377f,  -0.000041f,  -0.686436f,  -1.029340f,  },
 };
 const float u0[MAX_ROTOR_IN_COPTER] = {
-    3.3649f,
-    3.3649f,
-    2.9619f,
-    2.9619f,
+    2.908621f,
+    2.908293f,
+    2.907679f,
+    2.908007f,
 };
-const float xybound = 3.0f;
+const float xybound = 1.0f;
 const float lower_z = 7.0f;
-const float upper_z = -3.0f;
-const float max_pwm = 2000.0f;
-#elif COPTER_NAME == FIVE_ROTOR
- #define MAX_ROTOR_IN_COPTER 5
-// Used by LQR controller.
-// Q = [5 5 5 10 10 10 10 10 10 10 10 10]. Payload = 1710g.
-const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {-0.4849f,  1.1227f,    -0.9833f,   8.8479f,    4.6687f,    2.5393f,    -0.9345f,   2.1293f,    -1.8534f,   1.7476f,    1.0990f,    2.6706f},
-    {0.9129f,   1.0793f,    -1.1748f,   8.5562f,    -6.9016f,   -0.5175f,   1.7486f,    2.0394f,    -2.2077f,   1.7836f,    -1.5654f,   -1.4553f},
-    {-0.5963f,  -1.0935f,   -0.9312f,   -8.4579f,   4.9731f,    0.3432f,    -1.1200f,   -2.0736f,   -1.7519f,   -1.7812f,   1.0255f,    1.1868f},
-    {1.0087f,   -1.1729f,   -1.1189f,   -8.8432f,   -7.2087f,   -0.5975f,   1.9082f,    -2.2169f,   -2.1046f,   -1.7926f,   -1.5076f,   -0.2570f},
-    {-1.5996f,  -0.0564f,   -0.7308f,   -0.1882f,   13.1810f,   -2.1045f,   -3.0516f,   -0.1047f,   -1.3738f,   0.0346f,    2.6983f,    -2.3525f},
-};
-float u0[MAX_ROTOR_IN_COPTER] = {
-    6.9843f,
-    9.1864f,
-    6.9385f,
-    9.1384f,
-    4.5914f,
-};
-const float xybound = 4.0f;
-const float lower_z = 10.0f;
-const float upper_z = -5.0f;
-const float max_pwm = 1800.0f;
-#elif COPTER_NAME == BUNNY_ROTOR
- #define MAX_ROTOR_IN_COPTER 4
-// Used by LQR controller.
-// Q = [5 5 5 5 5 10 5 5 5 5 5 5]. R = [8 8 1 1]. Mass = 1800g.
-const float K[MAX_ROTOR_IN_COPTER][NUM_COL] = {
-    {0.0246f,   -0.5920f,   -0.4130f,   -3.7786f,   -0.1293f,   0.4548f,    0.0356f,    -0.8985f,   -0.7387f,   -0.8130f,   -0.0200f,   0.8764f},
-    {0.0106f,   0.5087f,    -0.3376f,   3.2607f,    -0.0709f,   0.7100f,    0.0165f,    0.7725f,    -0.6691f,   0.7195f,    -0.0125f,   1.2507f},
-    {-1.5924f,  0.2247f,    -1.1925f,   1.3277f,    9.4032f,    -1.4084f,   -2.3648f,   0.3349f,    -1.5937f,   0.2420f,    1.8876f,    -1.7431f},
-    {1.5680f,   0.2749f,    -1.1409f,   1.7197f,    -9.2829f,   -1.5259f,   2.3299f,    0.4160f,    -1.4895f,   0.3391f,    -1.8741f,   -1.9494f},
-};
-float u0[MAX_ROTOR_IN_COPTER] = {
-    4.5768f,
-    4.8049f,
-    4.5112f,
-    3.7470f,
-};
-const float xybound = 5.0f;
-const float lower_z = 20.0f;
-const float upper_z = -10.0f;
-const float max_pwm = 2000.0f;
-
+const float upper_z = -1.5f;
+const float min_pwm = 1100.0f;
+const float max_pwm = 1900.0f;
 #else
     // Do nothing.
 #endif
@@ -147,67 +104,31 @@ float wrap180(const float x) {
     return x < -180.0f ? (x + 360.0f) : (x > 180.0f ? (x - 360.0f) : x);
 }
 
-float thrust2pwm_kde_14inch(const float thrust, const float voltage) {
+float thrust2pwm_dji(const float thrust, const float voltage) {
     // Reject unreasonable data.
     if (thrust <= 0.0f || voltage <= 7.5f || voltage >= 13.0f) return 1000.0f;
     // Output from matlab:
     /*
-    Linear model Poly21:
-    a(x,y) = p00 + p10*x + p01*y + p20*x^2 + p11*x*y
-      where x is normalized by mean 1425 and std 201.8
-      and where y is normalized by mean 11.38 and std 0.3678
-    Coefficients (with 95% confidence bounds):
-      p00 =         3.4  (3.375, 3.424)
-      p10 =       3.324  (3.306, 3.341)
-      p01 =      0.2254  (0.2078, 0.2431)
-      p20 =      0.7846  (0.7648, 0.8043)
-      p11 =      0.1704  (0.1526, 0.1883)
-    */
-    const float mean_throttle = 1425.0f;
-    const float std_throttle = 201.8140f;
-    const float mean_voltage = 11.3775f;
-    const float std_voltage = 0.3678f;
-    const float p00 = 3.4f;
-    const float p10 = 3.324f;
-    const float p01 = 0.2254f;
-    const float p20 = 0.7846f;
-    const float p11 = 0.1704f;
-    const float y = (voltage - mean_voltage) / std_voltage;
-    const float a = p20;
-    const float b = p11 * y + p10;
-    const float c = p01 * y + p00 - thrust;
-    const float delta = b * b - 4 * a * c;
-    if (delta < 0.0f) return 1000.0f;
-    const float x = (-b + sqrtf(delta)) / 2.0f / a;
-    const float throttle = x * std_throttle + mean_throttle;
-    return clamp(throttle, 1000.0f, max_pwm);
-}
-
-float thrust2pwm_kde_10inch(const float thrust, const float voltage) {
-    // Output from matlab:
-    /*
+    thrust = sf(pwm, voltage)
+     x: mean: 1525  std: 231.1462
+     y: mean: 11.7894 std: 0.3300
      Linear model Poly21:
-     a(x,y) = p00 + p10*x + p01*y + p20*x^2 + p11*x*y
-       where x is normalized by mean 1550 and std 274.1
-       and where y is normalized by mean 11.48 and std 0.3972
+     sf(x,y) = p00 + p10*x + p01*y + p20*x^2 + p11*x*y
      Coefficients (with 95% confidence bounds):
-       p00 =       2.827  (2.805, 2.848)
-       p10 =       2.037  (2.023, 2.052)
-       p01 =      0.1959  (0.1812, 0.2105)
-       p20 =      0.1797  (0.1633, 0.196)
-       p11 =      0.1362  (0.1215, 0.151)
-    */
-    // Reject unreasonable data.
-    if (thrust <= 0.0f || voltage <= 7.5f || voltage >= 13.0f) return 1000.0f;
-    const float mean_throttle = 1550.0f;
-    const float std_throttle = 274.1f;
-    const float mean_voltage = 11.48f;
-    const float std_voltage = 0.3972f;
-    const float p00 = 2.827f;
-    const float p10 = 2.037f;
-    const float p01 = 0.1959f;
-    const float p20 = 0.1797f;
-    const float p11 = 0.1362f;
+       p00 =       2.939  (2.912, 2.966)
+       p10 =       2.422  (2.401, 2.442)
+       p01 =      0.1464  (0.1259, 0.1669)
+       p20 =      0.3989  (0.3762, 0.4215)
+       p11 =      0.1119  (0.0913, 0.1325)*/
+    const float mean_throttle = 1525.0f;
+    const float std_throttle = 231.1462f;
+    const float mean_voltage = 11.7894f;
+    const float std_voltage = 0.3300f;
+    const float p00 = 2.939f;
+    const float p10 = 2.422f;
+    const float p01 = 0.1464f;
+    const float p20 = 0.3989f;
+    const float p11 = 0.1119f;
     const float y = (voltage - mean_voltage) / std_voltage;
     const float a = p20;
     const float b = p11 * y + p10;
@@ -216,7 +137,7 @@ float thrust2pwm_kde_10inch(const float thrust, const float voltage) {
     if (delta < 0.0f) return 1000.0f;
     const float x = (-b + sqrtf(delta)) / 2.0f / a;
     const float throttle = x * std_throttle + mean_throttle;
-    return clamp(throttle, 1000.0f, max_pwm);
+    return clamp(throttle, min_pwm, max_pwm);
 }
 
 void AP_MotorsTao::setup_motors() {
@@ -316,27 +237,16 @@ void AP_MotorsTao::output_armed_stabilizing() {
 
     // Convert u to pwm.
     float pwm[MAX_ROTOR_IN_COPTER];
-#if COPTER_NAME == BUNNY_ROTOR
-    // For bunny we have different propellers for different motors.
-    pwm[0] = thrust2pwm_kde_10inch(u[0], average_voltage);
-    pwm[1] = thrust2pwm_kde_10inch(u[1], average_voltage);
-    pwm[2] = thrust2pwm_kde_14inch(u[2], average_voltage);
-    pwm[3] = thrust2pwm_kde_14inch(u[3], average_voltage);
-#elif COPTER_NAME == QUAD_ROTOR
-    pwm[0] = thrust2pwm_kde_10inch(u[0], average_voltage);
-    pwm[1] = thrust2pwm_kde_10inch(u[1], average_voltage);
-    pwm[2] = thrust2pwm_kde_14inch(u[2], average_voltage);
-    pwm[3] = thrust2pwm_kde_14inch(u[3], average_voltage);
-#else
+#if COPTER_NAME == DJI_COPTER
     for (int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
-        pwm[i] = thrust2pwm_kde_14inch(u[i], average_voltage);
+        pwm[i] = thrust2pwm_dji(u[i], average_voltage);
     }
 #endif
 
     // Finally write pwm to the motor.
     for(int i = 0; i < MAX_ROTOR_IN_COPTER; ++i) {
         const float motor_output = clamp(pwm[i],
-                (float)1000.0f, (float)2000.0f);
+                min_pwm, max_pwm);
         hal.rcout->write(i, (uint16_t)motor_output);
     }
 }
