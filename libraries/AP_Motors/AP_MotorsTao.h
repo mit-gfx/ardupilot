@@ -18,7 +18,7 @@ class Copter;
 class AP_MotorsTao : public AP_MotorsMatrix {
 public:
     /// Constructor
-    AP_MotorsTao(uint16_t loop_rate, uint16_t speed_hz, const Copter& cop)
+    AP_MotorsTao(uint16_t loop_rate, uint16_t speed_hz, Copter& cop)
         : AP_MotorsMatrix(loop_rate, speed_hz), _copter(cop) { }
     virtual ~AP_MotorsTao() {}
 
@@ -32,7 +32,7 @@ protected:
 
 private:
     // Points to the Copter class so that we can get all kinds of sensor's data.
-    const Copter&       _copter;
+    Copter&       _copter;
 };
 
 #endif  // AP_MOTORSTAO

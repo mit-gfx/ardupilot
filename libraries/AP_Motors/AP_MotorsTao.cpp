@@ -249,4 +249,11 @@ void AP_MotorsTao::output_armed_stabilizing() {
                 min_pwm, max_pwm);
         hal.rcout->write(i, (uint16_t)motor_output);
     }
+
+    // store log
+    for (int i = 0;i < NUM_COL;++i) {
+        _copter.X0[i] = X0[i];
+        _copter.X[i] = X[i];
+    }
+
 }
